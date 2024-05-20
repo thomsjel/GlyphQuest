@@ -1,0 +1,36 @@
+{
+  "name": "webxr",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "ngrok": "ngrok http 3000"
+  },
+  "dependencies": {
+    "@ar-js-org/ar.js": "^3.4.5",
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^5.15.11",
+    "@mui/material": "^5.15.11",
+    "@splinetool/loader": "^1.1.9",
+    "aframe": "^1.5.0",
+    "next": "14.1.0",
+    "nodemailer": "^6.9.13",
+    "qrcode": "^1.5.3",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-hook-form": "^7.51.3",
+    "react-icons": "^5.1.0",
+    "react-toastify": "^10.0.5",
+    "three": "^0.161.0",
+    "troika-three-text": "^0.49.1",
+    "use-react-screenshot": "^4.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8",
+    "eslint-config-next": "14.1.0"
+  }
+}
