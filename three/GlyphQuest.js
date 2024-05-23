@@ -20,8 +20,62 @@ export default class GlyphQuest {
 
     const scene = new THREE.Scene();
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.3);
-    directionalLight.position.set(10, 15, 10);
+    // Loadings ...
+    const loadingManager = new THREE.LoadingManager(
+      () => {
+        console.log("Loading complete!");
+      },
+      (item, loaded, total) => {
+        console.log("Loading: " + (loaded / total) * 100 + "%");
+      }
+    );
+
+    const loader = new GLTFLoader(loadingManager);
+    let reticle;
+    let customModel = null;
+
+    const loadReticle = new Promise((resolve, reject) => {
+      loader.load(
+        "https://immersive-web.github.io/webxr-samples/media/gltf/reticle/reticle.gltf",
+        function (gltf) {
+          reticle = gltf.scene;
+          reticle.visible = false;
+          scene.add(reticle);
+          resolve(reticle);
+        },
+        undefined,
+        function (error) {
+          console.error("Error loading reticle:", error);
+          reject(error);
+        }
+      );
+    });
+
+    const loadCustomModel = new Promise((resolve, reject) => {
+      loader.load(
+        "/models/custom-model.glb",
+        function (gltf) {
+          customModel = gltf.scene;
+
+          customModel.position.set(2, 0, -6.5);
+          customModel.scale.set(0.1, 0.1, 0.1);
+          scene.add(customModel);
+          resolve(customModel);
+        },
+        undefined,
+        function (error) {
+          console.error("Error loading custom model:", error);
+          reject(error);
+        }
+      );
+    });
+
+    // Wait for all models to load
+    await Promise.all([loadReticle, loadCustomModel]);
+
+    // Add scene lighting
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 4);
+    directionalLight.position.set(-2, 3, 3);
     scene.add(directionalLight);
 
     // Set up the WebGLRenderer, which handles rendering to the session's base layer.
@@ -55,6 +109,9 @@ export default class GlyphQuest {
     this.stationB = this.stationTwo();
     this.stationB.name = "Station 2";
 
+    this.stationC = customModel;
+    this.stationC.name = "Station 3";
+
     // Add a visible radius around stationA
     const radiusGeometry = new THREE.RingGeometry(2, 2.05, 64);
 
@@ -82,11 +139,25 @@ export default class GlyphQuest {
     this.stationBRadius.rotation.x = -Math.PI / 2;
     this.stationBRadius.position.copy(this.stationB.position);
 
+    this.stationCRadius = new THREE.Mesh(
+      radiusGeometry,
+      new THREE.MeshBasicMaterial({
+        color: COLOR.INDIGO,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.8,
+      })
+    );
+    this.stationCRadius.rotation.x = -Math.PI / 2;
+    this.stationCRadius.position.copy(this.stationC.position);
+
     scene.add(
       this.stationA,
       this.stationARadius,
       this.stationB,
-      this.stationBRadius
+      this.stationBRadius,
+      this.stationC,
+      this.stationCRadius
     );
 
     // A 'local' reference space has a native origin that is located
@@ -106,34 +177,6 @@ export default class GlyphQuest {
     const hitTestSource = await session.requestHitTestSource({
       space: viewerSpace,
     });
-
-    const loadingManager = new THREE.LoadingManager(
-      () => {
-        console.log("Loading complete!");
-      },
-      (item, loaded, total) => {
-        console.log("Loading: " + (loaded / total) * 100 + "%");
-      }
-    );
-
-    const loader = new GLTFLoader(loadingManager);
-    let reticle;
-    loader.load(
-      "https://immersive-web.github.io/webxr-samples/media/gltf/reticle/reticle.gltf",
-      function (gltf) {
-        reticle = gltf.scene;
-        reticle.visible = false;
-        scene.add(reticle);
-      }
-    );
-
-    let flower;
-    loader.load(
-      "https://immersive-web.github.io/webxr-samples/media/gltf/sunflower/sunflower.gltf",
-      function (gltf) {
-        flower = gltf.scene;
-      }
-    );
 
     // Create a render loop that allows us to draw on the AR view.
     const onXRFrame = (time, frame) => {
@@ -166,12 +209,17 @@ export default class GlyphQuest {
           this.stationA.lookAt(camera.getWorldPosition(new THREE.Vector3()));
         }
 
-        // Check boundaries for both stations
+        if (customModel === null) {
+          return;
+        }
+
+        // Check boundaries for all stations
         let closestStation = null;
         let minDistance = Infinity;
         const stations = [
           { station: this.stationA, radius: this.stationARadius },
           { station: this.stationB, radius: this.stationBRadius },
+          { station: this.stationC, radius: this.stationCRadius },
         ];
 
         for (const { station, radius } of stations) {
@@ -217,8 +265,17 @@ export default class GlyphQuest {
               );
             }
 
+            if (this.stationCRadius) {
+              this.stationCRadius.position.set(
+                this.stationCRadius.position.x,
+                hitPose.transform.position.y,
+                this.stationCRadius.position.z
+              );
+            }
+
             this.boundaryCheck(this.stationA, this.stationARadius, camera);
             this.boundaryCheck(this.stationB, this.stationBRadius, camera);
+            this.boundaryCheck(this.stationC, this.stationCRadius, camera);
           }
         }
 
@@ -258,7 +315,7 @@ export default class GlyphQuest {
     plane.add(text);
     text.position.set(0, 0, 0.01); // Ensure text is slightly in front of the plane to avoid z-fighting
 
-    plane.position.set(0, 0, -2);
+    plane.position.set(-2, 0, -2);
 
     return plane;
   }
@@ -281,7 +338,7 @@ export default class GlyphQuest {
     text.sync();
 
     obj.add(text);
-    obj.position.set(0, 0, -6.5);
+    obj.position.set(-2, 0, -6.5);
 
     return obj;
   }

@@ -173,7 +173,7 @@ export default function Home() {
         <div className={styles.play}>
           {controlsEnabled && (
             <Link
-              href="/xr"
+              href="/test"
               className={styles.card}
               onClick={handleRenderCanvas}
             >
