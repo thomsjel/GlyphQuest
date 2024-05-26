@@ -1,17 +1,14 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { Text } from "troika-three-text";
-
-const COLOR = {
-  INDIGO: 0x818cf8,
-  GREEN: 0x00ff00,
-  PINKY: 0xff0060,
-};
+import { COLOR, TEXTS, MATERIALS } from "./constants/glyphQuest/index.js";
 
 export default class GlyphQuest {
   constructor() {}
 
   async activateXR() {
+    let floorShadowEnabled = false;
+
     const domOverlay = document.getElementById("dom-overlay-root");
     this.ueq = document.querySelector(".questionnaire-root");
     // Add a canvas element and initialize a WebGL context that is compatible with WebXR.
@@ -30,32 +27,11 @@ export default class GlyphQuest {
         console.log("Loading: " + (loaded / total) * 100 + "%");
       }
     );
-
-    const textureLoader = new THREE.TextureLoader(loadingManager);
-    let customModelTextureAlbedo = null;
-
-    const loadTextureAlbedo = new Promise((resolve, reject) => {
-      textureLoader.load(
-        "/textures/lime-albedo.jpg",
-        function (texture) {
-          customModelTextureAlbedo = texture;
-          resolve(texture);
-        },
-        undefined,
-        function (error) {
-          console.error("Error loading custom model texture:", error);
-          reject(error);
-        }
-      );
-    });
-
-    // Wait for all textures to load
-    await Promise.all([loadTextureAlbedo]);
-
     const gltfLoader = new GLTFLoader(loadingManager);
     let reticle;
     let customModel = null;
     let stationEModel = null;
+    let shadowPlane = null;
 
     const loadReticle = new Promise((resolve, reject) => {
       gltfLoader.load(
@@ -82,20 +58,23 @@ export default class GlyphQuest {
 
           customModel.traverse((child) => {
             if (child.isMesh) {
-              child.material = new THREE.MeshStandardMaterial({
-                color: COLOR.PINKY,
-                metalness: 0.8,
-                roughness: 0.1,
-                //map: customModelTextureAlbedo,
-              });
+              child.material = MATERIALS.CUSTOM_MODEL;
               child.castShadow = true;
               child.receiveShadow = true;
             }
           });
-
           customModel.position.set(2.5, -0.5, -2);
-          customModel.scale.set(0.1, 0.1, 0.1);
-          //scene.add(customModel);
+          customModel.scale.set(0.2, 0.2, 0.2);
+
+          // add shadow plane
+          shadowPlane = new THREE.Mesh(
+            new THREE.PlaneGeometry(3, 3),
+            new THREE.MeshStandardMaterial({ color: 0xffffff })
+          );
+          shadowPlane.receiveShadow = true;
+          shadowPlane.rotation.x = -Math.PI / 2;
+          shadowPlane.position.set(2.5, 0, -2);
+          scene.add(shadowPlane);
           resolve(customModel);
         },
         undefined,
@@ -112,7 +91,7 @@ export default class GlyphQuest {
         function (gltf) {
           stationEModel = gltf.scene;
 
-          stationEModel.position.set(0, 0, -9);
+          stationEModel.position.set(0, 0, -10);
           stationEModel.scale.set(0.1, 0.1, 0.1);
           //scene.add(stationEModel);
           resolve(stationEModel);
@@ -129,24 +108,22 @@ export default class GlyphQuest {
     await Promise.all([loadReticle, loadCustomModel, loadStationFive]);
 
     // Add scene lighting
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 4);
-    directionalLight.position.set(-2, 3, 3);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 6);
+    directionalLight.position.set(0, 2, 1);
+    if (customModel) directionalLight.target = customModel;
     directionalLight.castShadow = true;
-    scene.add(directionalLight);
+    scene.add(directionalLight, directionalLight.target);
 
-    const directionalLight2 = new THREE.AmbientLight(0xffffff, 3);
-    directionalLight2.position.set(0, 2, 0);
-    directionalLight2.castShadow = true;
-    scene.add(directionalLight2);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
 
     // Set up the WebGLRenderer, which handles rendering to the session's base layer.
     const renderer = new THREE.WebGLRenderer({
       alpha: true,
-      preserveDrawingBuffer: true,
+      //antialias: true,
       canvas: canvas,
-      context: gl,
     });
-    renderer.autoClear = false;
+    renderer.xr.enabled = true;
 
     // The API directly updates the camera matrices.
     // Disable matrix auto updates so three.js doesn't attempt
@@ -178,68 +155,11 @@ export default class GlyphQuest {
     this.stationE = stationEModel;
     this.stationE.name = "Station 5";
 
-    // Add a visible radius around stationA
-    const radiusGeometry = new THREE.RingGeometry(2, 2.05, 64);
-
-    this.stationARadius = new THREE.Mesh(
-      radiusGeometry,
-      new THREE.MeshBasicMaterial({
-        color: COLOR.INDIGO,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.8,
-      })
-    );
-    this.stationARadius.rotation.x = -Math.PI / 2;
-    this.stationARadius.position.copy(this.stationA.position);
-
-    this.stationBRadius = new THREE.Mesh(
-      radiusGeometry,
-      new THREE.MeshBasicMaterial({
-        color: COLOR.INDIGO,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.8,
-      })
-    );
-    this.stationBRadius.rotation.x = -Math.PI / 2;
-    this.stationBRadius.position.copy(this.stationB.position);
-
-    this.stationCRadius = new THREE.Mesh(
-      radiusGeometry,
-      new THREE.MeshBasicMaterial({
-        color: COLOR.INDIGO,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.8,
-      })
-    );
-    this.stationCRadius.rotation.x = -Math.PI / 2;
-    this.stationCRadius.position.copy(this.stationC.position);
-
-    this.stationERadius = new THREE.Mesh(
-      radiusGeometry,
-      new THREE.MeshBasicMaterial({
-        color: COLOR.INDIGO,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.8,
-      })
-    );
-    this.stationERadius.rotation.x = -Math.PI / 2;
-    this.stationERadius.position.copy(this.stationE.position);
-
-    // add all stations to the scene
-    scene.add(
-      this.stationA,
-      this.stationARadius,
-      this.stationB,
-      this.stationBRadius,
-      this.stationC,
-      this.stationCRadius,
-      this.stationE,
-      this.stationERadius
-    );
+    // Add a visible bundary around stations
+    this.stationARadius = this.createBoundary(this.stationA, scene);
+    this.stationBRadius = this.createBoundary(this.stationB, scene);
+    this.stationCRadius = this.createBoundary(this.stationC, scene);
+    this.stationERadius = this.createBoundary(this.stationE, scene);
 
     // A 'local' reference space has a native origin that is located
     // near the viewer's position at the time the session was created.
@@ -285,11 +205,15 @@ export default class GlyphQuest {
         camera.projectionMatrix.fromArray(view.projectionMatrix);
         camera.updateMatrixWorld(true);
 
-        // Make stationA face the camera
+        // Make stations facing the camera
         if (this.stationA) {
           this.stationA.lookAt(camera.getWorldPosition(new THREE.Vector3()));
         }
-
+        /*
+        if (this.stationE) {
+          this.stationE.lookAt(camera.getWorldPosition(new THREE.Vector3()));
+        }
+*/
         // Check boundaries for all stations
         let closestStation = null;
         let minDistance = Infinity;
@@ -329,10 +253,12 @@ export default class GlyphQuest {
           );
           reticle.updateMatrixWorld(true);
 
-          this.setPositions(this.stationARadius, hitPose);
-          this.setPositions(this.stationBRadius, hitPose);
-          this.setPositions(this.stationCRadius, hitPose);
-          this.setPositions(this.stationERadius, hitPose);
+          this.setToFloorPosition(this.stationARadius, hitPose);
+          this.setToFloorPosition(this.stationBRadius, hitPose);
+          this.setToFloorPosition(this.stationCRadius, hitPose);
+          this.setToFloorPosition(this.stationERadius, hitPose);
+          this.setToFloorPosition(this.stationC, hitPose);
+          if (shadowPlane) this.setToFloorPosition(shadowPlane, hitPose);
 
           this.boundaryCheck(this.stationA, this.stationARadius, camera);
           this.boundaryCheck(this.stationB, this.stationBRadius, camera);
@@ -350,8 +276,7 @@ export default class GlyphQuest {
   stationOne() {
     // Create text using troika-three-text
     const text = new Text();
-    text.text =
-      "Gutenberg druckte in Mainz das erste Buch mit beweglichen Bleilettern und löste damit eine Medienrevolution aus.";
+    text.text = TEXTS.STATION_ONE;
     text.fontSize = 0.07; // Adjust the font size
     text.color = 0xffffff;
     text.maxWidth = 0.85; // Ensure the text does not overflow the plane width
@@ -383,8 +308,7 @@ export default class GlyphQuest {
   stationTwo() {
     // Create text using troika-three-text
     const text = new Text();
-    text.text =
-      "Ligaturen sind Buchstabenverbindungen, um Leerräume oder Überschneidungen mit nebenstehenden Buchstaben zu vermeiden.";
+    text.text = TEXTS.STATION_TWO;
     text.fontSize = 0.07; // Adjust the font size
     text.color = 0xff0000;
     text.maxWidth = 1; // Ensure the text does not overflow the plane width
@@ -419,7 +343,7 @@ export default class GlyphQuest {
     return distance;
   }
 
-  setPositions(radius, hitPose) {
+  setToFloorPosition(radius, hitPose) {
     if (radius) {
       radius.position.set(
         radius.position.x,
@@ -427,5 +351,14 @@ export default class GlyphQuest {
         radius.position.z
       );
     }
+  }
+
+  createBoundary(station, scene) {
+    const radiusGeometry = new THREE.RingGeometry(2, 2.05, 64);
+    const radius = new THREE.Mesh(radiusGeometry, MATERIALS.BOUNDARY);
+    radius.rotation.x = -Math.PI / 2;
+    radius.position.copy(station.position);
+    scene.add(radius, station);
+    return radius;
   }
 }

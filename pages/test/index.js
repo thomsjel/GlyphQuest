@@ -42,13 +42,16 @@ export default function TestPage() {
           <p>{`Email sending: ${emailSending}`}</p>
           <p>{`Email sent: ${emailSent}`}</p>
           <p>{`Form: ${form}`}</p>
+          <p id="errors">ERR</p>
         </div>
         <Questionnaire
           onEmailSending={setEmailSending}
           onEmailSent={setEmailSent}
           onForm={setForm}
         />
+        <button id="shadow-button">SHADOW</button>
       </Portal>
+
       <button id="ar-button">Start</button>
     </>
   );

@@ -574,3 +574,17 @@ button:focus {
   -webkit-appearance: none;
   font-size: 1rem;
 }
+
+#shadow-button {
+  position: absolute;
+  bottom: 6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  background: var(--gq-indigo);
+  padding: 1rem 2rem;
+  border-radius: 6rem;
+  border: 1px solid white;
+  -webkit-appearance: none;
+  font-size: 1rem;
+}
