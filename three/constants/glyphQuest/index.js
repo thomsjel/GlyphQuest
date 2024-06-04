@@ -12,7 +12,7 @@ export const TEXTS = {
   STATION_TWO:
     "Ligaturen sind Buchstabenverbindungen, um Leerräume oder Überschneidungen mit nebenstehenden Buchstaben zu vermeiden.",
   STATION_THREE: "Station 3",
-  STATION_FOUR: "Station 4",
+  STATION_FOUR: "Pagina wird die Seitenzahl in einem Buch genannt.",
   STATION_FIVE: "Station 5",
 };
 

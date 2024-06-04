@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { Text } from "troika-three-text";
 import { COLOR, TEXTS, MATERIALS } from "./constants/glyphQuest/index.js";
+import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
+import { FontLoader } from "three/addons/loaders/FontLoader.js";
 
 export default class GlyphQuest {
   constructor() {}
@@ -150,7 +152,8 @@ export default class GlyphQuest {
     this.stationC = customModel;
     this.stationC.name = "Station 3";
 
-    // Station 4 procedurally generated
+    this.stationD = this.stationFour();
+    this.stationD.name = "Station 4";
 
     this.stationE = stationEModel;
     this.stationE.name = "Station 5";
@@ -159,6 +162,7 @@ export default class GlyphQuest {
     this.stationARadius = this.createBoundary(this.stationA, scene);
     this.stationBRadius = this.createBoundary(this.stationB, scene);
     this.stationCRadius = this.createBoundary(this.stationC, scene);
+    this.stationDRadius = this.createBoundary(this.stationD, scene);
     this.stationERadius = this.createBoundary(this.stationE, scene);
 
     // A 'local' reference space has a native origin that is located
@@ -221,7 +225,7 @@ export default class GlyphQuest {
           { station: this.stationA, radius: this.stationARadius },
           { station: this.stationB, radius: this.stationBRadius },
           { station: this.stationC, radius: this.stationCRadius },
-          // station 4 procedurally generated missing
+          { station: this.stationD, radius: this.stationDRadius },
           { station: this.stationE, radius: this.stationERadius },
         ];
 
@@ -325,6 +329,39 @@ export default class GlyphQuest {
     obj.position.set(-2.5, 0, -6.5);
 
     return obj;
+  }
+
+  async stationFour() {
+    //create some Procedual Text
+    // TEXTS.STATION_FOUR
+    const loader = new FontLoader();
+    let textGeometry;
+
+    await new Promise((resolve, reject) => {
+      loader.load(
+        "/fonts/Arial_Regular.json",
+        (font) => {
+          textGeometry = new TextGeometry(TEXTS.STATION_FOUR, {
+            font: font,
+            size: 80,
+            depth: 5,
+            curveSegments: 12,
+            bevelEnabled: true,
+            bevelThickness: 10,
+            bevelSize: 8,
+            bevelOffset: 0,
+            bevelSegments: 5,
+          });
+          resolve();
+        },
+        undefined,
+        reject
+      );
+    });
+    const material = new THREE.MeshStandardMaterial();
+    const mesh = new THREE.Mesh(textGeometry, material);
+    mesh.position.set(2.5, 0, -6.5);
+    return mesh;
   }
 
   boundaryCheck(station, radius, camera) {
