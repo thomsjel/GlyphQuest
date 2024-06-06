@@ -17,12 +17,17 @@ export default function TestPage() {
       return;
     }
 
-    introref.current = new Intro();
+    const intro = document.getElementById("intro");
+
+    //introref.current = new Intro();
     sceneRef.current = new GlyphQuest();
+    /*
     const arButton = document.getElementById("ar-button");
-    arButton.addEventListener("click", async () => {
-      await sceneRef.current.activateXR();
+    arButton.addEventListener("click", () => {
+      //intro.style.display = "none";
+      ////sceneRef.current = new GlyphQuest();
     });
+    */
   }, []);
 
   return (
@@ -61,7 +66,7 @@ export default function TestPage() {
         <span>Quest</span>
       </h1>
 
-      <button id="ar-button">Start</button>
+      {/*<button id="ar-button">Start</button>*/}
     </>
   );
 }

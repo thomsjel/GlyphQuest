@@ -199,6 +199,8 @@ export default function Home() {
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setClearAlpha(1);
       renderer.xr.enabled = true;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
       renderTarget = new THREE.WebGLRenderTarget(
         window.innerWidth,
@@ -372,8 +374,7 @@ export default function Home() {
 
     const enableFloorShadow = (floorPosition) => {
       floorShadowEnabled = true;
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
       threeText.children[0].children[0].castShadow = true;
       threeText.children[0].children[0].receiveShadow = true;
       //floor

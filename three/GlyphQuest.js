@@ -1,15 +1,164 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { Text } from "troika-three-text";
-import { COLOR, TEXTS, MATERIALS } from "./constants/glyphQuest/index.js";
+import {
+  COLOR,
+  TEXTS,
+  MATERIALS,
+  POSITIONS,
+} from "./constants/glyphQuest/index.js";
 import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
 import { FontLoader } from "three/addons/loaders/FontLoader.js";
+import { ARButton } from "three/examples/jsm/webxr/ARButton.js";
 
 export default class GlyphQuest {
-  constructor() {}
+  constructor() {
+    this.start();
+  }
+
+  async start() {
+    if ("xr" in navigator) {
+      const supported = await navigator.xr.isSessionSupported("immersive-ar");
+      if (supported) {
+        //await this.activateXR();
+        this.testXR();
+      }
+    } else {
+      alert("WebXR not available in this browser");
+    }
+  }
+
+  testXR() {
+    let hitTestSource = null;
+    let hitTestSourceRequested = false;
+    const container = document.createElement("div");
+    container.id = "custom-canvas";
+    document.body.appendChild(container);
+
+    const scene = new THREE.Scene();
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    // Set up the WebGLRenderer, which handles rendering to the session's base layer.
+    const renderer = new THREE.WebGLRenderer({
+      alpha: true,
+      //antialias: true,
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.xr.enabled = true;
+    //renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    //renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.needsUpdate = true;
+
+    const camera = new THREE.PerspectiveCamera();
+    camera.matrixAutoUpdate = false;
+
+    container.appendChild(renderer.domElement);
+
+    const arButton = ARButton.createButton(renderer, {
+      requiredFeatures: ["local", "hit-test", "dom-overlay"],
+    });
+    document.body.appendChild(arButton);
+
+    // Add scene lighting
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 6);
+    directionalLight.position.set(0, 2, 1);
+    directionalLight.castShadow = true;
+    scene.add(directionalLight);
+
+    const reticleGeometry = new THREE.RingGeometry(0.1, 0.11, 32);
+    const reticle = new THREE.Mesh(reticleGeometry, MATERIALS.RETICLE);
+    reticle.rotation.x = -Math.PI / 2;
+    reticle.visible = false;
+    scene.add(reticle);
+
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    const material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+    const box = new THREE.Mesh(geometry, material);
+    box.position.set(0, 0, -1);
+    box.castShadow = true;
+    scene.add(box);
+
+    const shadowPlaneGeometry = new THREE.PlaneGeometry(10, 10);
+    const shadowPlaneMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.7,
+    });
+    const shadowPlane = new THREE.Mesh(
+      shadowPlaneGeometry,
+      shadowPlaneMaterial
+    );
+    shadowPlane.rotation.x = -Math.PI / 2;
+    shadowPlane.receiveShadow = true;
+    shadowPlane.material.needsUpdate = true;
+    shadowPlane.position.set(0, 0, 0);
+    scene.add(shadowPlane);
+
+    const animate = () => {
+      renderer.setAnimationLoop(render);
+    };
+
+    const render = (timestamp, frame) => {
+      if (frame) {
+        const referenceSpace = renderer.xr.getReferenceSpace();
+        const session = renderer.xr.getSession();
+
+        if (hitTestSourceRequested === false) {
+          session
+            .requestReferenceSpace("viewer")
+            .then(function (referenceSpace) {
+              session
+                .requestHitTestSource({ space: referenceSpace })
+                .then(function (source) {
+                  hitTestSource = source;
+                });
+            });
+
+          hitTestSourceRequested = true;
+        }
+
+        if (hitTestSource) {
+          const hitTestResults = frame.getHitTestResults(hitTestSource);
+
+          if (hitTestResults.length) {
+            const hit = hitTestResults[0];
+
+            reticle.visible = true;
+            reticle.matrix.fromArray(
+              hit.getPose(referenceSpace).transform.matrix
+            );
+
+            let position = new THREE.Vector3();
+            let quaternion = new THREE.Quaternion();
+            let scale = new THREE.Vector3();
+
+            // Decompose the matrix to get the quaternion
+            reticle.matrix.decompose(position, quaternion, scale);
+            //floorPosition = position.y;
+            reticle.position.set(position.x, position.y, position.z);
+            box.position.set(box.position.x, position.y + 1.3, box.position.z);
+            shadowPlane.position.set(
+              shadowPlane.position.x,
+              position.y,
+              shadowPlane.position.z
+            );
+          } else {
+            reticle.visible = false;
+          }
+        }
+        renderer.render(scene, camera);
+      }
+    };
+    animate();
+  }
 
   async activateXR() {
     let floorShadowEnabled = false;
+    let groundHeight = 0;
+    let groundHeightSet = false;
 
     const domOverlay = document.getElementById("dom-overlay-root");
     this.ueq = document.querySelector(".questionnaire-root");
@@ -29,92 +178,14 @@ export default class GlyphQuest {
         console.log("Loading: " + (loaded / total) * 100 + "%");
       }
     );
-    const gltfLoader = new GLTFLoader(loadingManager);
-    let reticle;
-    let customModel = null;
-    let stationEModel = null;
-    let shadowPlane = null;
+    this.gltfLoader = new GLTFLoader(loadingManager);
 
-    const loadReticle = new Promise((resolve, reject) => {
-      gltfLoader.load(
-        "https://immersive-web.github.io/webxr-samples/media/gltf/reticle/reticle.gltf",
-        function (gltf) {
-          reticle = gltf.scene;
-          reticle.visible = false;
-          scene.add(reticle);
-          resolve(reticle);
-        },
-        undefined,
-        function (error) {
-          console.error("Error loading reticle:", error);
-          reject(error);
-        }
-      );
-    });
+    this.stationCModel;
+    this.stationEModel;
+    this.shadowPlane = null;
+    let reticle = this.createReticle();
 
-    const loadCustomModel = new Promise((resolve, reject) => {
-      gltfLoader.load(
-        "/models/custom-model.glb",
-        function (gltf) {
-          customModel = gltf.scene;
-
-          customModel.traverse((child) => {
-            if (child.isMesh) {
-              child.material = MATERIALS.CUSTOM_MODEL;
-              child.castShadow = true;
-              child.receiveShadow = true;
-            }
-          });
-          customModel.position.set(2.5, -0.5, -2);
-          customModel.scale.set(0.2, 0.2, 0.2);
-
-          // add shadow plane
-          shadowPlane = new THREE.Mesh(
-            new THREE.PlaneGeometry(3, 3),
-            new THREE.MeshStandardMaterial({ color: 0xffffff })
-          );
-          shadowPlane.receiveShadow = true;
-          shadowPlane.rotation.x = -Math.PI / 2;
-          shadowPlane.position.set(2.5, 0, -2);
-          scene.add(shadowPlane);
-          resolve(customModel);
-        },
-        undefined,
-        function (error) {
-          console.error("Error loading custom model:", error);
-          reject(error);
-        }
-      );
-    });
-
-    const loadStationFive = new Promise((resolve, reject) => {
-      gltfLoader.load(
-        "/models/station5.glb",
-        function (gltf) {
-          stationEModel = gltf.scene;
-
-          stationEModel.position.set(0, 0, -10);
-          stationEModel.scale.set(0.1, 0.1, 0.1);
-          //scene.add(stationEModel);
-          resolve(stationEModel);
-        },
-        undefined,
-        function (error) {
-          console.error("Error loading custom model:", error);
-          reject(error);
-        }
-      );
-    });
-
-    // Wait for all models to load
-    await Promise.all([loadReticle, loadCustomModel, loadStationFive]);
-
-    // Add scene lighting
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 6);
-    directionalLight.position.set(0, 2, 1);
-    if (customModel) directionalLight.target = customModel;
-    directionalLight.castShadow = true;
-    scene.add(directionalLight, directionalLight.target);
+    scene.add(reticle);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
@@ -126,12 +197,34 @@ export default class GlyphQuest {
       canvas: canvas,
     });
     renderer.xr.enabled = true;
+    //renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    //renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.needsUpdate = true;
 
     // The API directly updates the camera matrices.
     // Disable matrix auto updates so three.js doesn't attempt
     // to handle the matrices independently.
     const camera = new THREE.PerspectiveCamera();
     camera.matrixAutoUpdate = false;
+
+    // Add scene lighting
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 6);
+    directionalLight.position.set(0, 2, 1);
+    if (this.stationCModel) directionalLight.target = this.stationCModel;
+    directionalLight.castShadow = true;
+    /*directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
+    
+    directionalLight.shadow.camera.near = 0.01;
+    directionalLight.shadow.camera.far = 20;
+    directionalLight.shadow.camera.left = -10; // Adjust to cover your scene
+    directionalLight.shadow.camera.right = 10;
+    directionalLight.shadow.camera.top = 10;
+    directionalLight.shadow.camera.bottom = -10;
+    */
+    scene.add(directionalLight, directionalLight.target);
 
     // Initialize a WebXR session using "immersive-ar".
     const session = await navigator.xr.requestSession("immersive-ar", {
@@ -143,20 +236,22 @@ export default class GlyphQuest {
     });
 
     // Add stations for experiment
-    this.stationA = this.stationOne();
+    this.stationA = this.createStationA();
     this.stationA.name = "Station 1";
 
-    this.stationB = this.stationTwo();
+    this.stationB = this.createStationB();
     this.stationB.name = "Station 2";
 
-    this.stationC = customModel;
+    this.stationC = await this.createStationC();
     this.stationC.name = "Station 3";
 
-    this.stationD = await this.stationFour();
+    this.stationD = await this.createStationD();
     this.stationD.name = "Station 4";
 
-    this.stationE = stationEModel;
+    this.stationE = await this.loadStationE();
     this.stationE.name = "Station 5";
+
+    await Promise.all([this.stationC, this.stationE]);
 
     // Add a visible bundary around stations
     this.stationARadius = this.createBoundary(this.stationA, scene);
@@ -164,6 +259,30 @@ export default class GlyphQuest {
     this.stationCRadius = this.createBoundary(this.stationC, scene);
     this.stationDRadius = this.createBoundary(this.stationD, scene);
     this.stationERadius = this.createBoundary(this.stationE, scene);
+
+    const testSphere = new THREE.SphereGeometry(0.5, 32, 32);
+    const testMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffff00,
+      roughness: 0.7,
+    });
+    const testMesh = new THREE.Mesh(testSphere, testMaterial);
+    testMesh.position.set(0, 0.5, -1);
+    testMesh.castShadow = true;
+    testMesh.material.needsUpdate = true;
+    scene.add(testMesh);
+
+    // Create a floor plane to receive shadows
+    const floorGeometry = new THREE.PlaneGeometry(10, 10);
+    const floorMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.7,
+    });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+
+    floor.receiveShadow = true;
+    floor.material.needsUpdate = true;
+    scene.add(floor);
 
     // A 'local' reference space has a native origin that is located
     // near the viewer's position at the time the session was created.
@@ -220,6 +339,7 @@ export default class GlyphQuest {
 */
         // Check boundaries for all stations
         let closestStation = null;
+        let closestBoundary = null;
         let minDistance = Infinity;
         const stations = [
           { station: this.stationA, radius: this.stationARadius },
@@ -233,6 +353,7 @@ export default class GlyphQuest {
           const distance = this.boundaryCheck(station, radius, camera);
           if (distance <= 2 && distance < minDistance) {
             closestStation = station;
+            closestBoundary = radius;
             minDistance = distance;
           }
         }
@@ -257,12 +378,23 @@ export default class GlyphQuest {
           );
           reticle.updateMatrixWorld(true);
 
-          this.setToFloorPosition(this.stationARadius, hitPose);
-          this.setToFloorPosition(this.stationBRadius, hitPose);
-          this.setToFloorPosition(this.stationCRadius, hitPose);
-          this.setToFloorPosition(this.stationERadius, hitPose);
-          this.setToFloorPosition(this.stationC, hitPose);
-          if (shadowPlane) this.setToFloorPosition(shadowPlane, hitPose);
+          if (!groundHeightSet) {
+            groundHeight = hitPose.transform.position.y;
+            groundHeightSet = true;
+          }
+
+          if (hitPose.transform.position.y <= groundHeight + 0.01) {
+            this.setToFloorPosition(this.stationARadius, hitPose);
+            this.setToFloorPosition(this.stationBRadius, hitPose);
+            this.setToFloorPosition(this.stationCRadius, hitPose);
+            this.setToFloorPosition(this.stationDRadius, hitPose);
+            this.setToFloorPosition(this.stationERadius, hitPose);
+            this.setToFloorPosition(this.stationC, hitPose);
+            this.setToFloorPosition(this.stationD, hitPose);
+            this.setToFloorPosition(floor, hitPose);
+            if (this.shadowPlane)
+              this.setToFloorPosition(this.shadowPlane, hitPose);
+          }
 
           this.boundaryCheck(this.stationA, this.stationARadius, camera);
           this.boundaryCheck(this.stationB, this.stationBRadius, camera);
@@ -277,7 +409,15 @@ export default class GlyphQuest {
     session.requestAnimationFrame(onXRFrame);
   }
 
-  stationOne() {
+  createReticle() {
+    const geometry = new THREE.RingGeometry(0.1, 0.11, 32);
+    const reticle = new THREE.Mesh(geometry, MATERIALS.RETICLE);
+    reticle.rotation.x = -Math.PI / 2;
+    reticle.visible = false;
+    return reticle;
+  }
+
+  createStationA() {
     // Create text using troika-three-text
     const text = new Text();
     text.text = TEXTS.STATION_ONE;
@@ -292,7 +432,7 @@ export default class GlyphQuest {
     text.sync();
 
     // Create a plane geometry to serve as the background for the text
-    const planeGeometry = new THREE.PlaneGeometry(0.9, 0.8);
+    const planeGeometry = new THREE.PlaneGeometry(1.0, 0.6);
     const planeMaterial = new THREE.MeshBasicMaterial({
       color: 0x000000,
       transparent: true,
@@ -304,12 +444,16 @@ export default class GlyphQuest {
     plane.add(text);
     text.position.set(0, 0, 0.01); // Ensure text is slightly in front of the plane to avoid z-fighting
 
-    plane.position.set(-2.5, 0, -2);
+    plane.position.set(
+      POSITIONS.STATION_A.x,
+      POSITIONS.STATION_A.y,
+      POSITIONS.STATION_A.z
+    );
 
     return plane;
   }
 
-  stationTwo() {
+  createStationB() {
     // Create text using troika-three-text
     const text = new Text();
     text.text = TEXTS.STATION_TWO;
@@ -326,58 +470,164 @@ export default class GlyphQuest {
     text.sync();
 
     obj.add(text);
-    obj.position.set(-2.5, 0, -6.5);
+    obj.position.set(
+      POSITIONS.STATION_B.x,
+      POSITIONS.STATION_B.y,
+      POSITIONS.STATION_B.z
+    );
 
     return obj;
   }
 
-  async stationFour() {
-    //create some Procedual Text
-    // TEXTS.STATION_FOUR
-    const loader = new FontLoader();
-    let textGeometry;
+  createStationC() {
+    return new Promise((resolve) => {
+      this.gltfLoader.load("/models/custom-model.glb", (gltf) => {
+        const model = gltf.scene;
 
-    await new Promise((resolve, reject) => {
-      loader.load(
-        "/fonts/Arial_Regular.json",
-        (font) => {
-          textGeometry = new TextGeometry(TEXTS.STATION_FOUR, {
-            font: font,
-            size: 80,
-            depth: 5,
-            curveSegments: 24,
-            bevelEnabled: true,
-            bevelThickness: 5,
-            bevelSize: 4,
-            bevelOffset: 0,
-            bevelSegments: 10,
-          });
-          resolve();
-        },
-        undefined,
-        reject
-      );
+        model.traverse((child) => {
+          if (child.isMesh) {
+            child.material = MATERIALS.CUSTOM_MODEL;
+            child.castShadow = true;
+            //child.receiveShadow = true;
+            child.material.needsUpdate = true;
+          }
+        });
+
+        model.position.set(
+          POSITIONS.STATION_C.x,
+          POSITIONS.STATION_C.y,
+          POSITIONS.STATION_C.z
+        );
+        model.scale.set(0.2, 0.2, 0.2);
+        model.rotation.set(0, -Math.PI / 4, 0);
+
+        resolve(model);
+      });
     });
-    const material = new THREE.MeshStandardMaterial({
-      color: 0x00ffff,
-      metalness: 0,
-      roughness: 0,
+  }
+
+  async createStationD() {
+    const repeater = 0.05;
+    const loader = new FontLoader();
+    const texutreLoader = new THREE.TextureLoader();
+
+    const font = new Promise((resolve) => {
+      loader.load("/fonts/Arial_Bold.json", (loadedFont) => {
+        resolve(loadedFont);
+      });
     });
-    const mesh = new THREE.Mesh(textGeometry, material);
-    mesh.position.set(2.5, 0, -6.5);
-    //mesh.rotation.y = Math.PI / 2;
+
+    const albedoMap = new Promise((resolve) => {
+      texutreLoader.load("/textures/concrete_albedo.jpg", (texture) => {
+        //texture.colorSpace = THREE.SRGBColorSpace;
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.x = repeater;
+        texture.repeat.y = repeater;
+        resolve(texture);
+      });
+    });
+
+    const normalMap = new Promise((resolve) => {
+      texutreLoader.load("/textures/concrete_normal.jpg", (texture) => {
+        //texture.colorSpace = THREE.SRGBColorSpace;
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.x = repeater;
+        texture.repeat.y = repeater;
+        resolve(texture);
+      });
+    });
+
+    const roughnessMap = new Promise((resolve) => {
+      texutreLoader.load("/textures/concrete_roughness.jpg", (texture) => {
+        //texture.colorSpace = THREE.SRGBColorSpace;
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.x = repeater;
+        texture.repeat.y = repeater;
+        resolve(texture);
+      });
+    });
+
+    const aoMap = new Promise((resolve) => {
+      texutreLoader.load("/textures/concrete_ao.jpg", (texture) => {
+        //texture.colorSpace = THREE.SRGBColorSpace;
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.x = repeater;
+        texture.repeat.y = repeater;
+        resolve(texture);
+      });
+    });
+
+    const createTextGeometry = async (text, font, size, height) => {
+      const textGeometry = new TextGeometry(text, {
+        font: await Promise.resolve(font),
+        size: size,
+        height: height,
+        curveSegments: 24,
+        bevelEnabled: false,
+        bevelThickness: 5,
+        bevelSize: 4,
+        bevelOffset: 0,
+        bevelSegments: 10,
+      });
+
+      return textGeometry;
+    };
+
+    const line = TEXTS.STATION_FOUR;
+    const lineHeight = 110; // Adjust this value to set the line height
+    const textSize = 80;
+    const textHeight = 40;
+
+    const geometry = await createTextGeometry(line, font, textSize, textHeight);
+
+    geometry.computeBoundingBox();
+
+    const centerOffset =
+      -0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
+
+    geometry.translate(centerOffset, 0, 0);
+    const mesh = new THREE.Mesh(
+      geometry,
+      new THREE.MeshStandardMaterial({
+        map: await Promise.resolve(albedoMap),
+        normalMap: await Promise.resolve(normalMap),
+        roughnessMap: await Promise.resolve(roughnessMap),
+        aoMap: await Promise.resolve(aoMap),
+        color: COLOR.WHITE,
+      })
+    );
     mesh.castShadow = true;
     mesh.receiveShadow = true;
+    mesh.position.set(
+      POSITIONS.STATION_D.x,
+      POSITIONS.STATION_D.y,
+      POSITIONS.STATION_D.z
+    );
+    //mesh.position.set(0, 0, -1);
     mesh.scale.set(0.01, 0.01, 0.01);
-    mesh.geometry.center();
-    // Compute the bounding box of the mesh
-    const boundingBox = new THREE.Box3().setFromObject(mesh);
-    // Adjust the position of the mesh to set its origin to the bottom
-    mesh.position.y -= boundingBox.min.y;
-
-    // Update the mesh matrix
-    mesh.updateMatrix();
+    mesh.rotation.set(0, -Math.PI / 4, 0);
     return mesh;
+  }
+
+  loadStationE() {
+    return new Promise((resolve) => {
+      this.gltfLoader.load("/models/station5.glb", (gltf) => {
+        const model = gltf.scene;
+
+        model.position.set(
+          POSITIONS.STATION_E.x,
+          POSITIONS.STATION_E.y,
+          POSITIONS.STATION_E.z
+        );
+
+        model.scale.set(0.1, 0.1, 0.1);
+        resolve(model);
+      });
+    });
   }
 
   boundaryCheck(station, radius, camera) {
@@ -387,16 +637,19 @@ export default class GlyphQuest {
     camera.getWorldPosition(cameraPosition);
     const distance = stationPosition.distanceTo(cameraPosition);
 
-    if (distance <= 2) {
-      radius.material.color.set(COLOR.GREEN);
+    if (distance < 2) {
+      radius.material = new THREE.MeshBasicMaterial({
+        color: COLOR.INDIGO,
+      });
     } else {
-      radius.material.color.set(COLOR.INDIGO);
+      radius.material = MATERIALS.BOUNDARY;
     }
 
     return distance;
   }
 
   setToFloorPosition(radius, hitPose) {
+    //groundHeight = hitPose.transform.position.y;
     if (radius) {
       radius.position.set(
         radius.position.x,
