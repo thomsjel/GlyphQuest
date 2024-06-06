@@ -49,7 +49,7 @@ export default function TestPage() {
           onEmailSent={setEmailSent}
           onForm={setForm}
         />
-        <button id="shadow-button">SHADOW</button>
+        {/*<button id="shadow-button">SHADOW</button>*/}
       </Portal>
 
       <button id="ar-button">Start</button>

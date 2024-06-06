@@ -152,7 +152,7 @@ export default class GlyphQuest {
     this.stationC = customModel;
     this.stationC.name = "Station 3";
 
-    this.stationD = this.stationFour();
+    this.stationD = await this.stationFour();
     this.stationD.name = "Station 4";
 
     this.stationE = stationEModel;
@@ -345,12 +345,12 @@ export default class GlyphQuest {
             font: font,
             size: 80,
             depth: 5,
-            curveSegments: 12,
+            curveSegments: 24,
             bevelEnabled: true,
-            bevelThickness: 10,
-            bevelSize: 8,
+            bevelThickness: 5,
+            bevelSize: 4,
             bevelOffset: 0,
-            bevelSegments: 5,
+            bevelSegments: 10,
           });
           resolve();
         },
@@ -358,9 +358,25 @@ export default class GlyphQuest {
         reject
       );
     });
-    const material = new THREE.MeshStandardMaterial();
+    const material = new THREE.MeshStandardMaterial({
+      color: 0x00ffff,
+      metalness: 0,
+      roughness: 0,
+    });
     const mesh = new THREE.Mesh(textGeometry, material);
     mesh.position.set(2.5, 0, -6.5);
+    //mesh.rotation.y = Math.PI / 2;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.scale.set(0.01, 0.01, 0.01);
+    mesh.geometry.center();
+    // Compute the bounding box of the mesh
+    const boundingBox = new THREE.Box3().setFromObject(mesh);
+    // Adjust the position of the mesh to set its origin to the bottom
+    mesh.position.y -= boundingBox.min.y;
+
+    // Update the mesh matrix
+    mesh.updateMatrix();
     return mesh;
   }
 
