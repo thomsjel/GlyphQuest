@@ -90,8 +90,8 @@ export default class GlyphQuest {
     });
 
     // Add scene lighting
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 6);
-    directionalLight.position.set(0, 2, 1);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 8);
+    directionalLight.position.set(-4, 2, -2);
     directionalLight.castShadow = true;
     directionalLight.shadow.mapSize.width = this.shadowMapResolution;
     directionalLight.shadow.mapSize.height = this.shadowMapResolution;
@@ -697,6 +697,7 @@ export default class GlyphQuest {
     );
     mesh.castShadow = true;
     mesh.receiveShadow = true;
+    mesh.material.needsUpdate = true;
     mesh.position.set(
       POSITIONS.STATION_D.x,
       POSITIONS.STATION_D.y,
