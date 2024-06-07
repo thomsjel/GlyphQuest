@@ -17,17 +17,8 @@ export default function TestPage() {
       return;
     }
 
-    const intro = document.getElementById("intro");
-
-    //introref.current = new Intro();
+    introref.current = new Intro();
     sceneRef.current = new GlyphQuest();
-    /*
-    const arButton = document.getElementById("ar-button");
-    arButton.addEventListener("click", () => {
-      //intro.style.display = "none";
-      ////sceneRef.current = new GlyphQuest();
-    });
-    */
   }, []);
 
   return (
@@ -59,14 +50,11 @@ export default function TestPage() {
           onEmailSent={setEmailSent}
           onForm={setForm}
         />
-        {/*<button id="shadow-button">SHADOW</button>*/}
       </Portal>
       <h1>
         <span>Glyph</span>
         <span>Quest</span>
       </h1>
-
-      {/*<button id="ar-button">Start</button>*/}
     </>
   );
 }
