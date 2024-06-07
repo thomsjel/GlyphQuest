@@ -18,7 +18,9 @@ export default function TestPage() {
     }
 
     introref.current = new Intro();
-    sceneRef.current = new GlyphQuest();
+    setTimeout(() => {
+      sceneRef.current = new GlyphQuest();
+    }, 1000);
   }, []);
 
   return (
