@@ -67,6 +67,7 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
 
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [currentRadio, setCurrentRadio] = useState(0);
+  const [title, setTitle] = useState("");
 
   const nameRef = React.useRef();
   const ueqRef = React.useRef();
@@ -126,11 +127,13 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
   const handleRadioClick = (e) => {
     setCurrentRadio(e.target.value);
   };
-  /*
+
   useEffect(() => {
-    nameRef.current.textContent = ueqRef.current.title;
-  }, [ueqRef.current]);
-*/
+    if (ueqRef.current) {
+      setTitle(ueqRef.current.title);
+    }
+  }, [ueqRef.current?.title]);
+
   return (
     <div ref={ueqRef} id="ueq" className="questionnaire-root">
       <ToastContainer />

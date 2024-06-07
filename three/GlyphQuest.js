@@ -256,8 +256,6 @@ export default class GlyphQuest {
           if (distance < this.boundaryRadius && distance < minDistance) {
             closestStation = station;
             minDistance = distance;
-          } else {
-            closestStation = null;
           }
         }
 
