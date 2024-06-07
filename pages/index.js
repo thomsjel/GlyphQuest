@@ -50,7 +50,6 @@ export default function TestPage() {
         */}
         </div>
         <Questionnaire
-          id="ueq"
           onEmailSending={setEmailSending}
           onEmailSent={setEmailSent}
           onForm={setForm}
