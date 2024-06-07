@@ -12,9 +12,7 @@ import { FontLoader } from "three/addons/loaders/FontLoader.js";
 import { ARButton } from "three/examples/jsm/webxr/ARButton.js";
 
 export default class GlyphQuest {
-  constructor(options) {
-    this.ueq = options.ueq;
-
+  constructor() {
     // Loadings ...
     const loadingManager = new THREE.LoadingManager(
       () => {
@@ -28,6 +26,8 @@ export default class GlyphQuest {
 
     this.shadowMapResolution = 2048;
     this.shadowBlur = 10;
+
+    this.boundaryRadius = 2.05;
 
     this.start();
   }
@@ -50,6 +50,7 @@ export default class GlyphQuest {
     let groundHeightSet = false;
 
     const domOverlay = document.getElementById("dom-overlay-root");
+    const ueq = document.getElementById("ueq");
     const intro = document.getElementById("intro");
 
     const container = document.createElement("div");
@@ -242,22 +243,30 @@ export default class GlyphQuest {
         // Check boundaries for all stations
         let closestStation = null;
         let minDistance = Infinity;
-        const stations = [{ station: stationC, radius: stationCRadius }];
+        const stations = [
+          { station: stationA, radius: stationARadius },
+          { station: stationB, radius: stationBRadius },
+          { station: stationC, radius: stationCRadius },
+          { station: stationD, radius: stationDRadius },
+          { station: stationE, radius: stationERadius },
+        ];
 
         for (const { station, radius } of stations) {
           const distance = this.boundaryCheck(station, radius, camera);
-          if (distance <= 2 && distance < minDistance) {
+          if (distance < this.boundaryRadius && distance < minDistance) {
             closestStation = station;
             minDistance = distance;
+          } else {
+            closestStation = null;
           }
         }
 
         if (closestStation) {
-          this.ueq.setAttribute("title", closestStation.name);
-          this.ueq.style.display = "flex";
+          ueq.setAttribute("title", closestStation.name);
+          ueq.style.display = "flex";
         } else {
-          this.ueq.setAttribute("title", "undefined");
-          this.ueq.style.display = "none";
+          ueq.setAttribute("title", "undefined");
+          ueq.style.display = "none";
         }
 
         // Enable billboarding
@@ -743,7 +752,7 @@ export default class GlyphQuest {
     camera.getWorldPosition(cameraPosition);
     const distance = stationPosition.distanceTo(cameraPosition);
 
-    if (distance < 2) {
+    if (distance < this.boundaryRadius) {
       radius.material = new THREE.MeshBasicMaterial({
         color: COLOR.INDIGO,
       });
@@ -768,7 +777,7 @@ export default class GlyphQuest {
   }
 
   createBoundary(station, scene) {
-    const radiusGeometry = new THREE.RingGeometry(2, 2.05, 64);
+    const radiusGeometry = new THREE.RingGeometry(2, this.boundaryRadius, 64);
     const radius = new THREE.Mesh(radiusGeometry, MATERIALS.BOUNDARY);
     radius.rotation.x = -Math.PI / 2;
     radius.position.copy(station.position);

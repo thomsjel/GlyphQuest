@@ -17,12 +17,8 @@ export default function TestPage() {
       return;
     }
 
-    const ueq = document.getElementById("ueq");
-
     introref.current = new Intro();
-    sceneRef.current = new GlyphQuest({
-      ueq,
-    });
+    sceneRef.current = new GlyphQuest();
   }, []);
 
   return (
