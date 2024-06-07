@@ -17,8 +17,12 @@ export default function TestPage() {
       return;
     }
 
+    const ueq = document.getElementById("ueq");
+
     introref.current = new Intro();
-    sceneRef.current = new GlyphQuest();
+    sceneRef.current = new GlyphQuest({
+      ueq,
+    });
   }, []);
 
   return (
@@ -46,6 +50,7 @@ export default function TestPage() {
         */}
         </div>
         <Questionnaire
+          id="ueq"
           onEmailSending={setEmailSending}
           onEmailSent={setEmailSent}
           onForm={setForm}

@@ -12,7 +12,9 @@ import { FontLoader } from "three/addons/loaders/FontLoader.js";
 import { ARButton } from "three/examples/jsm/webxr/ARButton.js";
 
 export default class GlyphQuest {
-  constructor() {
+  constructor(options) {
+    this.ueq = options.ueq;
+
     // Loadings ...
     const loadingManager = new THREE.LoadingManager(
       () => {
@@ -49,7 +51,6 @@ export default class GlyphQuest {
 
     const domOverlay = document.getElementById("dom-overlay-root");
     const intro = document.getElementById("intro");
-    const ueq = document.querySelector(".questionnaire-root");
 
     const container = document.createElement("div");
     container.id = "custom-canvas";
@@ -110,13 +111,13 @@ export default class GlyphQuest {
     reticle.visible = false;
     scene.add(reticle);
 
-    const shadowPlaneGeometry = new THREE.PlaneGeometry(5, 5);
-    const shadowPlaneMaterial = new THREE.ShadowMaterial({
+    const shadowStationCGeometry = new THREE.PlaneGeometry(5, 5);
+    const shadowStationCMaterial = new THREE.ShadowMaterial({
       opacity: 0.3,
     });
     const shadowStationC = new THREE.Mesh(
-      shadowPlaneGeometry,
-      shadowPlaneMaterial
+      shadowStationCGeometry,
+      shadowStationCMaterial
     );
     shadowStationC.rotation.x = -Math.PI / 2;
     shadowStationC.receiveShadow = true;
@@ -127,7 +128,15 @@ export default class GlyphQuest {
       POSITIONS.STATION_C.z
     );
     scene.add(shadowStationC);
-    const shadowStationD = shadowStationC.clone();
+
+    const shadowStationDGeometry = new THREE.PlaneGeometry(5, 5);
+    const shadowStationDMaterial = new THREE.ShadowMaterial({
+      opacity: 0.3,
+    });
+    const shadowStationD = new THREE.Mesh(
+      shadowStationDGeometry,
+      shadowStationDMaterial
+    );
     shadowStationD.rotation.x = -Math.PI / 2;
     shadowStationD.receiveShadow = true;
     shadowStationD.material.needsUpdate = true;
@@ -221,6 +230,7 @@ export default class GlyphQuest {
               this.setToFloorPosition(stationC, hitPose);
               this.setToFloorPosition(stationD, hitPose);
               this.setToFloorPosition(shadowStationC, hitPose);
+              this.setToFloorPosition(shadowStationD, hitPose);
             }
 
             reticle.position.set(position.x, position.y, position.z);
@@ -243,11 +253,11 @@ export default class GlyphQuest {
         }
 
         if (closestStation) {
-          ueq.setAttribute("title", closestStation.name);
-          ueq.style.display = "flex";
+          this.ueq.setAttribute("title", closestStation.name);
+          this.ueq.style.display = "flex";
         } else {
-          ueq.setAttribute("title", "undefined");
-          ueq.style.display = "none";
+          this.ueq.setAttribute("title", "undefined");
+          this.ueq.style.display = "none";
         }
 
         // Enable billboarding
