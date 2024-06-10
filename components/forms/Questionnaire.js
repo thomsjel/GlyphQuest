@@ -67,12 +67,6 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [currentRadio, setCurrentRadio] = useState(0);
 
-  useEffect(() => {
-    reset();
-    setCurrentQuestion(0);
-    setCurrentRadio(0);
-  }, [props.key]);
-
   const onSubmit = async (data) => {
     onEmailSending(true);
     onEmailSent(false);
@@ -158,7 +152,7 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
           </label>
         </div>
 
-        {currentQuestion !== questions.length - 1 ? (
+        {currentQuestion !== questions.length ? (
           <button
             onClick={handleNextQuestion}
             disabled={
