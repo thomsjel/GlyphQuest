@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -67,10 +67,14 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [currentRadio, setCurrentRadio] = useState(0);
 
+  const ref = useRef();
+
   const onSubmit = async (data) => {
     onEmailSending(true);
     onEmailSent(false);
     onForm((prev) => prev + 1);
+
+    let station = ref.current?.title;
 
     const promise = fetch("/api/sendEmail", {
       method: "POST",
@@ -79,7 +83,7 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
       },
       body: JSON.stringify({
         email: "it221506@fhstp.ac.at",
-        subject: `UEQ Results for Station ${questions[currentQuestion].q}`,
+        subject: `UEQ Results for ${station}`,
         message: `name: ${
           questions[currentQuestion].label
         } \n\n ${JSON.stringify(data, null, 2)}`,
@@ -121,7 +125,7 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
   };
 
   return (
-    <div id="ueq" className="questionnaire-root">
+    <div ref={ref} id="ueq" className="questionnaire-root">
       <ToastContainer />
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="questionnaire-progress">
