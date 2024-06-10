@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { set, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FaAngleRight, FaRegPaperPlane } from "react-icons/fa6";
@@ -13,7 +13,6 @@ const scale = {
   novelty: "Neuheit",
 };
 
-// Define your questions here
 const questions = [
   {
     q: 1,
@@ -62,15 +61,17 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
     register,
     handleSubmit,
     formState: { errors },
-    setValue,
+    reset,
   } = useForm();
 
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [currentRadio, setCurrentRadio] = useState(0);
-  const [title, setTitle] = useState("");
 
-  const nameRef = React.useRef();
-  const ueqRef = React.useRef();
+  useEffect(() => {
+    reset();
+    setCurrentQuestion(0);
+    setCurrentRadio(0);
+  }, [props.key]);
 
   const onSubmit = async (data) => {
     onEmailSending(true);
@@ -84,12 +85,10 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
       },
       body: JSON.stringify({
         email: "it221506@fhstp.ac.at",
-        subject: `UEQ Results for ${ueqRef.current.title}`,
-        message: `name: ${ueqRef.current.title} \n\n ${JSON.stringify(
-          data,
-          null,
-          2
-        )}`,
+        subject: `UEQ Results for ${questions[currentQuestion].label}`,
+        message: `name: ${
+          questions[currentQuestion].label
+        } \n\n ${JSON.stringify(data, null, 2)}`,
       }),
     });
 
@@ -128,14 +127,8 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
     setCurrentRadio(e.target.value);
   };
 
-  useEffect(() => {
-    if (ueqRef.current) {
-      setTitle(ueqRef.current.title);
-    }
-  }, [ueqRef.current?.title]);
-
   return (
-    <div ref={ueqRef} id="ueq" className="questionnaire-root">
+    <div id="ueq" className="questionnaire-root">
       <ToastContainer />
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="questionnaire-progress">
