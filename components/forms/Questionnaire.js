@@ -150,7 +150,7 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
           </label>
         </div>
 
-        {currentQuestion !== questions.length - 1 ? (
+        {currentQuestion !== questions.length ? (
           <button
             onClick={handleNextQuestion}
             disabled={
