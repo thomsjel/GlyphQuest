@@ -154,7 +154,7 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
           <button
             onClick={handleNextQuestion}
             disabled={
-              currentRadio === 0 || currentQuestion === questions.length - 1
+              currentRadio === 0 || currentQuestion === questions.length
             }
           >
             Weiter{" "}
