@@ -111,10 +111,8 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
   };
 
   const handleNextQuestion = () => {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
-      setCurrentRadio(0);
-    }
+    setCurrentQuestion(currentQuestion + 1);
+    setCurrentRadio(0);
   };
 
   const handleRadioClick = (e) => {
@@ -152,7 +150,7 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
           </label>
         </div>
 
-        {currentQuestion !== questions.length ? (
+        {currentQuestion !== questions.length - 1 ? (
           <button
             onClick={handleNextQuestion}
             disabled={
