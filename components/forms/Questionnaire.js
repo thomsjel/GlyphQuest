@@ -79,7 +79,7 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
       },
       body: JSON.stringify({
         email: "it221506@fhstp.ac.at",
-        subject: `UEQ Results for ${questions[currentQuestion].label}`,
+        subject: `UEQ Results for Station ${questions[currentQuestion].q}`,
         message: `name: ${
           questions[currentQuestion].label
         } \n\n ${JSON.stringify(data, null, 2)}`,
