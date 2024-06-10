@@ -110,7 +110,8 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
     console.log(response);
   };
 
-  const handleNextQuestion = () => {
+  const handleNextQuestion = (e) => {
+    e.preventDefault();
     setCurrentQuestion(currentQuestion + 1);
     setCurrentRadio(0);
   };
@@ -151,12 +152,7 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
         </div>
 
         {currentQuestion !== questions.length - 1 ? (
-          <button
-            onClick={handleNextQuestion}
-            disabled={
-              currentRadio === 0 || currentQuestion === questions.length - 1
-            }
-          >
+          <button onClick={handleNextQuestion} disabled={currentRadio === 0}>
             Weiter{" "}
             <span style={{ display: "flex", marginLeft: ".15rem" }}>
               <FaAngleRight />
@@ -164,9 +160,11 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
           </button>
         ) : (
           <button
+            type="submit"
             className={`submit-button ${
               currentRadio !== 0 ? "active" : "disabled"
             }`}
+            disabled={currentRadio === 0}
           >
             Abschicken{" "}
             <span style={{ display: "flex", marginLeft: ".25rem" }}>
