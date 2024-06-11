@@ -556,7 +556,7 @@ export default class GlyphQuest {
       this.gltfLoader.load("/models/station5.glb", (gltf) => {
         const model = gltf.scene;
 
-        model.position.set(POSITIONS.INIT.x, -0.2, POSITIONS.INIT.z);
+        model.position.set(POSITIONS.INIT.x, -0.3, POSITIONS.INIT.z);
 
         model.scale.set(0.1, 0.1, 0.1);
         model.visible = false;
