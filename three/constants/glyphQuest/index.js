@@ -26,7 +26,7 @@ const customModelMaterial = new THREE.MeshStandardMaterial({
 const radiusMaterial = new THREE.MeshBasicMaterial({
   color: COLOR.INDIGO,
   transparent: true,
-  opacity: 0.2,
+  opacity: 0.01,
 });
 
 const stationDMaterial = new THREE.MeshStandardMaterial({

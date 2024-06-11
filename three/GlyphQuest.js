@@ -25,19 +25,24 @@ export default class GlyphQuest {
     this.gltfLoader = new GLTFLoader(loadingManager);
 
     this.shadowMapResolution = 2048;
-    this.shadowBlur = 10;
+    this.shadowBlur = 50;
 
     this.boundaryRadius = 2.05;
 
     this.currentStation = 0;
     this.stations = [];
+    this.boundaries = [];
+
+    this.clock = new THREE.Clock();
 
     this.start();
   }
 
   setCurrentStation(station) {
     this.currentStation = station;
-    this.updateUI();
+    // Just for testing
+    //this.updateUI();
+
     this.updateStationVisibility();
   }
 
@@ -46,14 +51,9 @@ export default class GlyphQuest {
   }
 
   updateStationVisibility() {
-    const stations = [
-      this.stationA,
-      this.stationB,
-      this.stationC,
-      this.stationD,
-      this.stationE,
-    ];
-    stations.forEach((station, index) => {
+    const ueq = document.getElementById("ueq");
+    ueq.style.display = "none";
+    this.stations.forEach((station, index) => {
       if (station) {
         station.visible = index === this.currentStation;
       }
@@ -68,8 +68,8 @@ export default class GlyphQuest {
       }
     } else {
       alert("WebXR not available in this browser");
-      //this.startExperience();
     }
+    //this.startExperience();
   }
 
   async startExperience() {
@@ -80,6 +80,8 @@ export default class GlyphQuest {
 
     const domOverlay = document.getElementById("dom-overlay-root");
     const ueq = document.getElementById("ueq");
+    const ueqButton = document.getElementById("ueqs-button");
+
     const intro = document.getElementById("intro");
 
     const container = document.createElement("div");
@@ -109,8 +111,26 @@ export default class GlyphQuest {
 
     container.appendChild(renderer.domElement);
 
+    // Load and play the audio
+    const listener = new THREE.AudioListener();
+    camera.add(listener);
+
+    const sound = new THREE.Audio(listener);
+    const audioLoader = new THREE.AudioLoader();
+
+    audioLoader.load("/finish.mp3", function (buffer) {
+      sound.setBuffer(buffer);
+      sound.loop = false;
+      sound.setVolume(0.8);
+    });
+
     const arButton = ARButton.createButton(renderer, {
-      requiredFeatures: ["local", "hit-test", "dom-overlay"],
+      requiredFeatures: [
+        "local",
+        "hit-test",
+        "dom-overlay",
+        "light-estimation",
+      ],
       domOverlay: { root: domOverlay },
     });
     document.body.appendChild(arButton);
@@ -118,11 +138,12 @@ export default class GlyphQuest {
     // Remove intro screen
     arButton.addEventListener("click", () => {
       intro.style.display = "none";
+      ueqButton.style.display = "flex";
     });
 
     // Add scene lighting
     const directionalLight = new THREE.DirectionalLight(0xffffff, 8);
-    directionalLight.position.set(-4, 2, -2);
+    directionalLight.position.set(-1, 2, 2);
     directionalLight.castShadow = true;
     directionalLight.shadow.mapSize.width = this.shadowMapResolution;
     directionalLight.shadow.mapSize.height = this.shadowMapResolution;
@@ -141,33 +162,16 @@ export default class GlyphQuest {
     reticle.visible = false;
     scene.add(reticle);
 
-    const shadowStationCGeometry = new THREE.PlaneGeometry(5, 5);
-    const shadowStationCMaterial = new THREE.ShadowMaterial({
-      opacity: 0.3,
+    const shadowGeometry = new THREE.PlaneGeometry(5, 5);
+    const shadowMaterial = new THREE.ShadowMaterial({
+      opacity: 0.2,
     });
-    const shadowStationC = new THREE.Mesh(
-      shadowStationCGeometry,
-      shadowStationCMaterial
-    );
-    shadowStationC.rotation.x = -Math.PI / 2;
-    shadowStationC.receiveShadow = true;
-    shadowStationC.material.needsUpdate = true;
-    shadowStationC.position.set(POSITIONS.INIT.x, 0, POSITIONS.INIT.z);
-    scene.add(shadowStationC);
-
-    const shadowStationDGeometry = new THREE.PlaneGeometry(5, 5);
-    const shadowStationDMaterial = new THREE.ShadowMaterial({
-      opacity: 0.3,
-    });
-    const shadowStationD = new THREE.Mesh(
-      shadowStationDGeometry,
-      shadowStationDMaterial
-    );
-    shadowStationD.rotation.x = -Math.PI / 2;
-    shadowStationD.receiveShadow = true;
-    shadowStationD.material.needsUpdate = true;
-    shadowStationD.position.set(POSITIONS.INIT.x, 0, POSITIONS.INIT.z);
-    scene.add(shadowStationD);
+    const shadowPlane = new THREE.Mesh(shadowGeometry, shadowMaterial);
+    shadowPlane.rotation.x = -Math.PI / 2;
+    shadowPlane.receiveShadow = true;
+    shadowPlane.material.needsUpdate = true;
+    shadowPlane.position.set(POSITIONS.INIT.x, 0, POSITIONS.INIT.z);
+    scene.add(shadowPlane);
 
     //Create testing stations
     const stationA = this.createStationA();
@@ -186,24 +190,50 @@ export default class GlyphQuest {
     stationD.name = "Station D";
     scene.add(stationD);
 
-    const stationE = await this.loadStationE();
+    const stationE = await this.createStationE();
     stationE.name = "Station E";
     scene.add(stationE);
 
-    const stationARadius = this.createBoundary(stationA, scene);
-    const stationBRadius = this.createBoundary(stationB, scene);
-    const stationCRadius = this.createBoundary(stationC, scene);
-    const stationDRadius = this.createBoundary(stationD, scene);
-    const stationERadius = this.createBoundary(stationE, scene);
+    const finalAnimation = await this.showFinalAnimation();
+    finalAnimation.name = "Final Animation";
+    scene.add(finalAnimation);
+
+    this.stations = [
+      stationA,
+      stationB,
+      stationC,
+      stationD,
+      stationE,
+      finalAnimation,
+    ];
 
     const animate = () => {
       renderer.setAnimationLoop(render);
     };
 
-    const render = (timestamp, frame) => {
+    const render = async (timestamp, frame) => {
       if (frame) {
         const referenceSpace = renderer.xr.getReferenceSpace();
         const session = renderer.xr.getSession();
+        const lightProbe = await session.requestLightProbe();
+        const lightEstimation = frame.getLightEstimate(lightProbe);
+
+        if (lightEstimation) {
+          const { primaryLightDirection, primaryLightIntensity } =
+            lightEstimation;
+
+          if (primaryLightDirection) {
+            directionalLight.position.set(
+              primaryLightDirection.x,
+              primaryLightDirection.y,
+              primaryLightDirection.z
+            );
+          }
+
+          if (primaryLightIntensity) {
+            directionalLight.intensity = primaryLightIntensity.y; // Using Y component as an example
+          }
+        }
 
         if (hitTestSourceRequested === false) {
           session
@@ -244,15 +274,10 @@ export default class GlyphQuest {
             }
 
             if (position.y <= groundHeight + 0.001) {
-              this.setToFloorPosition(stationARadius, hitPose, true);
-              this.setToFloorPosition(stationBRadius, hitPose, true);
-              this.setToFloorPosition(stationCRadius, hitPose, true);
-              this.setToFloorPosition(stationDRadius, hitPose, true);
-              this.setToFloorPosition(stationERadius, hitPose, true);
               this.setToFloorPosition(stationC, hitPose);
               this.setToFloorPosition(stationD, hitPose);
-              this.setToFloorPosition(shadowStationC, hitPose);
-              this.setToFloorPosition(shadowStationD, hitPose);
+              this.setToFloorPosition(finalAnimation, hitPose);
+              this.setToFloorPosition(shadowPlane, hitPose);
             }
 
             reticle.position.set(position.x, position.y, position.z);
@@ -265,281 +290,66 @@ export default class GlyphQuest {
         let closestStation = null;
         let minDistance = Infinity;
         const stations = [
-          { station: stationA, radius: stationARadius },
-          { station: stationB, radius: stationBRadius },
-          { station: stationC, radius: stationCRadius },
-          { station: stationD, radius: stationDRadius },
-          { station: stationE, radius: stationERadius },
+          { station: stationA },
+          { station: stationB },
+          { station: stationC },
+          { station: stationD },
+          { station: stationE },
         ];
 
-        for (const { station, radius } of stations) {
-          const distance = this.boundaryCheck(station, radius, camera);
+        for (const { station } of stations) {
+          const distance = this.boundaryCheck(station, camera);
           if (distance < this.boundaryRadius && distance < minDistance) {
             closestStation = station;
             minDistance = distance;
           }
         }
 
+        const stationNames = [
+          "Station A",
+          "Station B",
+          "Station C",
+          "Station D",
+          "Station E",
+        ];
+
+        if (this.currentStation < 5) {
+          ueqButton.addEventListener("click", () => {
+            ueq.setAttribute("title", stationNames[this.currentStation]);
+            ueq.style.display = "flex";
+          });
+        } else {
+          ueqButton.innerText = "Zurück";
+          ueqButton.addEventListener("click", () => {
+            window.location.href = "/";
+          });
+          if (!sound.isPlaying) {
+            sound.play();
+          }
+        }
+
+        /*
         if (closestStation) {
-          ueq.setAttribute("title", closestStation.name);
+          ueq.setAttribute("title", stationNames[this.currentStation]);
           ueq.style.display = "flex";
         } else {
           ueq.setAttribute("title", "undefined");
           ueq.style.display = "none";
         }
-
+*/
         // Enable billboarding
         if (stationA) {
           stationA.lookAt(camera.getWorldPosition(new THREE.Vector3()));
         }
 
+        const delta = this.clock.getDelta();
+
+        if (this.mixer) this.mixer.update(delta);
+
         renderer.render(scene, camera);
       }
     };
     animate();
-  }
-
-  async xrWithNoWorkingShadows() {
-    let floorShadowEnabled = false;
-    let groundHeight = 0;
-    let groundHeightSet = false;
-
-    const domOverlay = document.getElementById("dom-overlay-root");
-    this.ueq = document.querySelector(".questionnaire-root");
-    // Add a canvas element and initialize a WebGL context that is compatible with WebXR.
-    const canvas = document.createElement("canvas");
-    document.body.appendChild(canvas);
-    const gl = canvas.getContext("webgl", { xrCompatible: true });
-
-    const scene = new THREE.Scene();
-
-    this.stationCModel;
-    this.stationEModel;
-    this.shadowPlane = null;
-    let reticle = this.createReticle();
-
-    scene.add(reticle);
-
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
-
-    // Set up the WebGLRenderer, which handles rendering to the session's base layer.
-    const renderer = new THREE.WebGLRenderer({
-      alpha: true,
-      //antialias: true,
-      canvas: canvas,
-    });
-    renderer.xr.enabled = true;
-    //renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    //renderer.outputEncoding = THREE.sRGBEncoding;
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.needsUpdate = true;
-
-    // The API directly updates the camera matrices.
-    // Disable matrix auto updates so three.js doesn't attempt
-    // to handle the matrices independently.
-    const camera = new THREE.PerspectiveCamera();
-    camera.matrixAutoUpdate = false;
-
-    // Add scene lighting
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 6);
-    directionalLight.position.set(0, 2, 1);
-    if (this.stationCModel) directionalLight.target = this.stationCModel;
-    directionalLight.castShadow = true;
-    /*directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
-    
-    directionalLight.shadow.camera.near = 0.01;
-    directionalLight.shadow.camera.far = 20;
-    directionalLight.shadow.camera.left = -10; // Adjust to cover your scene
-    directionalLight.shadow.camera.right = 10;
-    directionalLight.shadow.camera.top = 10;
-    directionalLight.shadow.camera.bottom = -10;
-    */
-    scene.add(directionalLight, directionalLight.target);
-
-    // Initialize a WebXR session using "immersive-ar".
-    const session = await navigator.xr.requestSession("immersive-ar", {
-      requiredFeatures: ["local", "hit-test", "dom-overlay"],
-      domOverlay: { root: domOverlay },
-    });
-    session.updateRenderState({
-      baseLayer: new XRWebGLLayer(session, gl),
-    });
-
-    // Add stations for experiment
-    this.stationA = this.createStationA();
-    this.stationA.name = "Station 1";
-
-    this.stationB = this.createStationB();
-    this.stationB.name = "Station 2";
-
-    this.stationC = await this.createStationC();
-    this.stationC.name = "Station 3";
-
-    this.stationD = await this.createStationD();
-    this.stationD.name = "Station 4";
-
-    this.stationE = await this.loadStationE();
-    this.stationE.name = "Station 5";
-
-    await Promise.all([this.stationC, this.stationE]);
-
-    // Add a visible bundary around stations
-    this.stationARadius = this.createBoundary(this.stationA, scene);
-    this.stationBRadius = this.createBoundary(this.stationB, scene);
-    this.stationCRadius = this.createBoundary(this.stationC, scene);
-    this.stationDRadius = this.createBoundary(this.stationD, scene);
-    this.stationERadius = this.createBoundary(this.stationE, scene);
-
-    const testSphere = new THREE.SphereGeometry(0.5, 32, 32);
-    const testMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffff00,
-      roughness: 0.7,
-    });
-    const testMesh = new THREE.Mesh(testSphere, testMaterial);
-    testMesh.position.set(0, 0.5, -1);
-    testMesh.castShadow = true;
-    testMesh.material.needsUpdate = true;
-    scene.add(testMesh);
-
-    // Create a floor plane to receive shadows
-    const floorGeometry = new THREE.PlaneGeometry(10, 10);
-    const floorMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      roughness: 0.7,
-    });
-    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-    floor.rotation.x = -Math.PI / 2;
-
-    floor.receiveShadow = true;
-    floor.material.needsUpdate = true;
-    scene.add(floor);
-
-    // A 'local' reference space has a native origin that is located
-    // near the viewer's position at the time the session was created.
-    const referenceSpace = await session.requestReferenceSpace("local");
-
-    //Create a hit test source
-    /*
-    To calculate intersections with real-world objects, 
-    create a XRHitTestSource using XRSession.requestHitTestSource(). 
-    The ray used for hit testing has the viewer reference space as origin, 
-    meaning that the hit test is done from the center of the viewport.
-    */
-    // Create another XRReferenceSpace that has the viewer as the origin.
-    const viewerSpace = await session.requestReferenceSpace("viewer");
-    // Perform hit testing using the viewer as origin.
-    const hitTestSource = await session.requestHitTestSource({
-      space: viewerSpace,
-    });
-
-    // Create a render loop that allows us to draw on the AR view.
-    const onXRFrame = (time, frame) => {
-      // Queue up the next draw request.
-      session.requestAnimationFrame(onXRFrame);
-
-      // Bind the graphics framebuffer to the baseLayer's framebuffer
-      gl.bindFramebuffer(
-        gl.FRAMEBUFFER,
-        session.renderState.baseLayer.framebuffer
-      );
-
-      // Retrieve the pose of the device.
-      // XRFrame.getViewerPose can return null while the session attempts to establish tracking.
-      const pose = frame.getViewerPose(referenceSpace);
-      if (pose) {
-        // In mobile AR, we only have one view.
-        const view = pose.views[0];
-
-        const viewport = session.renderState.baseLayer.getViewport(view);
-        renderer.setSize(viewport.width, viewport.height);
-
-        // Use the view's transform matrix and projection matrix to configure the THREE.camera.
-        camera.matrix.fromArray(view.transform.matrix);
-        camera.projectionMatrix.fromArray(view.projectionMatrix);
-        camera.updateMatrixWorld(true);
-
-        // Make stations facing the camera
-        if (this.stationA) {
-          this.stationA.lookAt(camera.getWorldPosition(new THREE.Vector3()));
-        }
-        /*
-        if (this.stationE) {
-          this.stationE.lookAt(camera.getWorldPosition(new THREE.Vector3()));
-        }
-*/
-        // Check boundaries for all stations
-        let closestStation = null;
-        let closestBoundary = null;
-        let minDistance = Infinity;
-        const stations = [
-          { station: this.stationA, radius: this.stationARadius },
-          { station: this.stationB, radius: this.stationBRadius },
-          { station: this.stationC, radius: this.stationCRadius },
-          { station: this.stationD, radius: this.stationDRadius },
-          { station: this.stationE, radius: this.stationERadius },
-        ];
-
-        for (const { station, radius } of stations) {
-          const distance = this.boundaryCheck(station, radius, camera);
-          if (distance <= 2 && distance < minDistance) {
-            closestStation = station;
-            closestBoundary = radius;
-            minDistance = distance;
-          }
-        }
-
-        if (closestStation) {
-          this.ueq.setAttribute("title", closestStation.name);
-          this.ueq.style.display = "flex";
-        } else {
-          this.ueq.setAttribute("title", "undefined");
-          this.ueq.style.display = "none";
-        }
-
-        // Drawing a targeting reticle
-        const hitTestResults = frame.getHitTestResults(hitTestSource);
-        if (hitTestResults.length > 0 && reticle) {
-          const hitPose = hitTestResults[0].getPose(referenceSpace);
-          reticle.visible = true;
-          reticle.position.set(
-            hitPose.transform.position.x,
-            hitPose.transform.position.y,
-            hitPose.transform.position.z
-          );
-          reticle.updateMatrixWorld(true);
-
-          if (!groundHeightSet) {
-            groundHeight = hitPose.transform.position.y;
-            groundHeightSet = true;
-          }
-
-          if (hitPose.transform.position.y <= groundHeight + 0.01) {
-            this.setToFloorPosition(this.stationARadius, hitPose);
-            this.setToFloorPosition(this.stationBRadius, hitPose);
-            this.setToFloorPosition(this.stationCRadius, hitPose);
-            this.setToFloorPosition(this.stationDRadius, hitPose);
-            this.setToFloorPosition(this.stationERadius, hitPose);
-            this.setToFloorPosition(this.stationC, hitPose);
-            this.setToFloorPosition(this.stationD, hitPose);
-            this.setToFloorPosition(floor, hitPose);
-            if (this.shadowPlane)
-              this.setToFloorPosition(this.shadowPlane, hitPose);
-          }
-
-          this.boundaryCheck(this.stationA, this.stationARadius, camera);
-          this.boundaryCheck(this.stationB, this.stationBRadius, camera);
-          this.boundaryCheck(this.stationC, this.stationCRadius, camera);
-        }
-
-        // Render the scene with THREE.WebGLRenderer.
-        renderer.render(scene, camera);
-      }
-    };
-
-    session.requestAnimationFrame(onXRFrame);
   }
 
   createReticle() {
@@ -560,6 +370,7 @@ export default class GlyphQuest {
     text.overflowWrap = "break-word";
     text.anchorX = "center";
     text.anchorY = "middle";
+    text.textAlign = "justify";
 
     // Update the text's geometry
     text.sync();
@@ -578,6 +389,7 @@ export default class GlyphQuest {
     text.position.set(0, 0, 0.01); // Ensure text is slightly in front of the plane to avoid z-fighting
 
     plane.position.set(POSITIONS.INIT.x, POSITIONS.INIT.y, POSITIONS.INIT.z);
+    plane.visible = true;
 
     return plane;
   }
@@ -592,6 +404,7 @@ export default class GlyphQuest {
     text.overflowWrap = "break-word";
     text.anchorX = "center";
     text.anchorY = "middle";
+    text.textAlign = "center";
 
     const obj = new THREE.Object3D();
 
@@ -600,6 +413,7 @@ export default class GlyphQuest {
 
     obj.add(text);
     obj.position.set(POSITIONS.INIT.x, POSITIONS.INIT.y, POSITIONS.INIT.z);
+    obj.visible = false;
 
     return obj;
   }
@@ -624,7 +438,8 @@ export default class GlyphQuest {
           POSITIONS.INIT.z
         );
         model.scale.set(0.2, 0.2, 0.2);
-        model.rotation.set(0, -Math.PI / 4, 0);
+        //model.rotation.set(0, -Math.PI / 4, 0);
+        model.visible = false;
 
         resolve(model);
       });
@@ -731,41 +546,57 @@ export default class GlyphQuest {
     mesh.position.set(POSITIONS.INIT.x, POSITIONS.INIT.y, POSITIONS.INIT.z);
     //mesh.position.set(0, 0, -1);
     mesh.scale.set(0.01, 0.01, 0.01);
-    mesh.rotation.set(0, -Math.PI / 4, 0);
+    //mesh.rotation.set(0, -Math.PI / 4, 0);
+    mesh.visible = false;
     return mesh;
   }
 
-  loadStationE() {
+  createStationE() {
     return new Promise((resolve) => {
       this.gltfLoader.load("/models/station5.glb", (gltf) => {
         const model = gltf.scene;
 
-        model.position.set(
-          POSITIONS.INIT.x,
-          POSITIONS.INIT.y,
-          POSITIONS.INIT.z
-        );
+        model.position.set(POSITIONS.INIT.x, -0.2, POSITIONS.INIT.z);
 
         model.scale.set(0.1, 0.1, 0.1);
+        model.visible = false;
         resolve(model);
       });
     });
   }
 
-  boundaryCheck(station, radius, camera) {
+  showFinalAnimation() {
+    return new Promise((resolve) => {
+      this.gltfLoader.load("/models/mannequin.glb", (gltf) => {
+        const model = gltf.scene;
+
+        model.position.set(POSITIONS.INIT.x, 0, POSITIONS.INIT.z);
+
+        model.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            //child.receiveShadow = true;
+            child.material.needsUpdate = true;
+          }
+        });
+
+        gltf.animations.forEach((clip) => {
+          this.mixer = new THREE.AnimationMixer(model);
+          this.mixer.clipAction(clip).play();
+        });
+
+        model.visible = false;
+        resolve(model);
+      });
+    });
+  }
+
+  boundaryCheck(station, camera) {
     const stationPosition = new THREE.Vector3();
     station.getWorldPosition(stationPosition);
     const cameraPosition = new THREE.Vector3();
     camera.getWorldPosition(cameraPosition);
     const distance = stationPosition.distanceTo(cameraPosition);
-
-    if (distance < this.boundaryRadius) {
-      radius.material = new THREE.MeshBasicMaterial({
-        color: COLOR.INDIGO,
-      });
-    } else {
-      radius.material = MATERIALS.BOUNDARY;
-    }
 
     return distance;
   }

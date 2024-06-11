@@ -8,6 +8,8 @@
   src: url("../assets/Modulo_05-23/Modulo-Regular.otf") format("opentype");
 }
 
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap");
+
 :root {
   --gq: #f87171;
   --gq2: #8181c7;
@@ -105,11 +107,17 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
-  font-family: var(--font-modulo-r);
+  font-family: "Inter", sans-serif;
+  font-optical-sizing: auto;
+  font-style: normal;
+  font-variation-settings: "slnt" 0;
 }
 
 button {
-  font-family: var(--font-modulo-r);
+  font-family: "Inter", sans-serif !import;
+  font-optical-sizing: auto;
+  font-style: normal;
+  font-variation-settings: "slnt" 0;
 }
 
 input[type="radio"] {
@@ -636,11 +644,44 @@ h1 {
   display: flex;
   justify-content: center;
   align-items: center;
-  /* height: fit-content; */
+  font-family: var(--font-modulo-r);
   line-height: 2.5rem;
 }
 
 h1 > span:first-child {
   font-family: var(--font-modulo-eb);
   letter-spacing: 0.4px;
+}
+
+#ueqs-button {
+  display: none;
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 6rem;
+  -webkit-appearance: none;
+  font-size: large;
+  z-index: 10;
+}
+
+#ARButton {
+  position: absolute !important;
+  bottom: 2rem !important;
+  left: 50svw !important;
+  transform: translateX(-50%) !important;
+  color: white !important;
+  padding: 1rem 2rem !important;
+  border-radius: 6rem !important;
+  border: 1px solid white !important;
+  -webkit-appearance: none !important;
+  font-size: 1rem !important;
+  z-index: 10 !important;
+  width: fit-content !important;
+  opacity: 1 !important;
+  background: none !important;
 }

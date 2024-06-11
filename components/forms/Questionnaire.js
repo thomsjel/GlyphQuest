@@ -84,9 +84,7 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
       body: JSON.stringify({
         email: "it221506@fhstp.ac.at",
         subject: `UEQ Results for ${station}`,
-        message: `name: ${
-          questions[currentQuestion].label
-        } \n\n ${JSON.stringify(data, null, 2)}`,
+        message: `name: ${station} \n\n ${JSON.stringify(data, null, 2)}`,
       }),
     });
 
@@ -125,59 +123,61 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
   };
 
   return (
-    <div ref={ref} id="ueq" className="questionnaire-root">
+    <>
       <ToastContainer />
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="questionnaire-progress">
-          <progress value={currentQuestion + 1} max={questions.length} />
-        </div>
+      <div ref={ref} id="ueq" className="questionnaire-root">
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="questionnaire-progress">
+            <progress value={currentQuestion + 1} max={questions.length} />
+          </div>
 
-        <div>
-          <label>
-            <div>{questions[currentQuestion].label}</div>
-            <div>
-              {[...Array(7)].map((_, i) => (
-                <label key={i} className="questionnaire-radio">
-                  <input
-                    type="radio"
-                    name={`question-${currentQuestion + 1}`}
-                    value={i + 1}
-                    {...register(`question-${currentQuestion + 1}`, {
-                      required: true,
-                    })}
-                    onClick={handleRadioClick}
-                  />
-                  {i + 1}
-                </label>
-              ))}
-            </div>
-            <div>{questions[currentQuestion].opposite}</div>
-          </label>
-        </div>
+          <div>
+            <label>
+              <div>{questions[currentQuestion].label}</div>
+              <div>
+                {[...Array(7)].map((_, i) => (
+                  <label key={i} className="questionnaire-radio">
+                    <input
+                      type="radio"
+                      name={`question-${currentQuestion + 1}`}
+                      value={i + 1}
+                      {...register(`question-${currentQuestion + 1}`, {
+                        required: true,
+                      })}
+                      onClick={handleRadioClick}
+                    />
+                    {i + 1}
+                  </label>
+                ))}
+              </div>
+              <div>{questions[currentQuestion].opposite}</div>
+            </label>
+          </div>
 
-        {currentQuestion !== questions.length - 1 ? (
-          <button onClick={handleNextQuestion} disabled={currentRadio === 0}>
-            Weiter{" "}
-            <span style={{ display: "flex", marginLeft: ".15rem" }}>
-              <FaAngleRight />
-            </span>
-          </button>
-        ) : (
-          <button
-            type="submit"
-            className={`submit-button ${
-              currentRadio !== 0 ? "active" : "disabled"
-            }`}
-            disabled={currentRadio === 0}
-          >
-            Abschicken{" "}
-            <span style={{ display: "flex", marginLeft: ".25rem" }}>
-              <FaRegPaperPlane />
-            </span>
-          </button>
-        )}
-      </form>
-    </div>
+          {currentQuestion !== questions.length - 1 ? (
+            <button onClick={handleNextQuestion} disabled={currentRadio === 0}>
+              Weiter{" "}
+              <span style={{ display: "flex", marginLeft: ".15rem" }}>
+                <FaAngleRight />
+              </span>
+            </button>
+          ) : (
+            <button
+              type="submit"
+              className={`submit-button ${
+                currentRadio !== 0 ? "active" : "disabled"
+              }`}
+              disabled={currentRadio === 0}
+            >
+              Abschicken{" "}
+              <span style={{ display: "flex", marginLeft: ".25rem" }}>
+                <FaRegPaperPlane />
+              </span>
+            </button>
+          )}
+        </form>
+      </div>
+    </>
   );
 }
 

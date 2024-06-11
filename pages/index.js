@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Questionnaire from "@/components/forms/Questionnaire";
 import Portal from "@/components/Portal";
 import Intro from "@/three/Intro";
+import RateReviewIcon from "@mui/icons-material/RateReview";
 
 export default function TestPage() {
   const sceneRef = useRef();
@@ -24,13 +25,23 @@ export default function TestPage() {
         setTimeout(() => {
           sceneRef.current = new GlyphQuest();
           // Set the initial question
-          sceneRef.current.setCurrentQuestion(form);
+          sceneRef.current.setCurrentStation(form);
         }, 500);
       }
     } else {
       // Update the question when form changes
-      sceneRef.current.setCurrentQuestion(form);
+      sceneRef.current.setCurrentStation(form);
     }
+
+    window.addEventListener("pageshow", function (event) {
+      if (
+        event.persisted ||
+        (window.performance && window.performance.navigation.type == 2)
+      ) {
+        // The page was accessed through the history (back button)
+        window.location.reload();
+      }
+    });
   }, [form]);
 
   return (
@@ -63,6 +74,9 @@ export default function TestPage() {
           onEmailSent={setEmailSent}
           onForm={setForm}
         />
+        <button id="ueqs-button">
+          <RateReviewIcon />
+        </button>
       </Portal>
       <h1>
         <span>Glyph</span>
