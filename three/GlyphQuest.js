@@ -29,7 +29,18 @@ export default class GlyphQuest {
 
     this.boundaryRadius = 2.05;
 
+    this.currentStation = null;
+
     this.start();
+  }
+
+  setCurrentQuestion(question) {
+    this.currentQuestion = question;
+    this.updateUI();
+  }
+
+  updateUI() {
+    document.getElementById("currentStation").innerText = this.currentStation;
   }
 
   async start() {
@@ -40,6 +51,7 @@ export default class GlyphQuest {
       }
     } else {
       alert("WebXR not available in this browser");
+      //this.startExperience();
     }
   }
 

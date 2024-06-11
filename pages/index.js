@@ -6,22 +6,32 @@ import Intro from "@/three/Intro";
 
 export default function TestPage() {
   const sceneRef = useRef();
-  const introref = useRef();
+  const introRef = useRef();
 
   const [emailSending, setEmailSending] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [form, setForm] = useState(0);
 
   useEffect(() => {
-    if (sceneRef.current) {
-      return;
+    if (!sceneRef.current) {
+      if (introRef.current) {
+        return;
+      }
+      introRef.current = new Intro();
+      if (sceneRef.current) {
+        return;
+      } else {
+        setTimeout(() => {
+          sceneRef.current = new GlyphQuest();
+          // Set the initial question
+          sceneRef.current.setCurrentQuestion(form);
+        }, 500);
+      }
+    } else {
+      // Update the question when form changes
+      sceneRef.current.setCurrentQuestion(form);
     }
-
-    introref.current = new Intro();
-    setTimeout(() => {
-      sceneRef.current = new GlyphQuest();
-    }, 1000);
-  }, []);
+  }, [form]);
 
   return (
     <>
@@ -46,6 +56,7 @@ export default function TestPage() {
           <p>{`Form: ${form}`}</p>
           <p id="errors">ERR</p>
         */}
+          <p id="currentStation"></p>
         </div>
         <Questionnaire
           onEmailSending={setEmailSending}
