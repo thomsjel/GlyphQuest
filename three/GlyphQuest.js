@@ -29,18 +29,35 @@ export default class GlyphQuest {
 
     this.boundaryRadius = 2.05;
 
-    this.currentStation = null;
+    this.currentStation = 0;
+    this.stations = [];
 
     this.start();
   }
 
-  setCurrentQuestion(question) {
-    this.currentQuestion = question;
+  setCurrentStation(station) {
+    this.currentStation = station;
     this.updateUI();
+    this.updateStationVisibility();
   }
 
   updateUI() {
     document.getElementById("currentStation").innerText = this.currentStation;
+  }
+
+  updateStationVisibility() {
+    const stations = [
+      this.stationA,
+      this.stationB,
+      this.stationC,
+      this.stationD,
+      this.stationE,
+    ];
+    stations.forEach((station, index) => {
+      if (station) {
+        station.visible = index === this.currentStation;
+      }
+    });
   }
 
   async start() {
@@ -135,11 +152,7 @@ export default class GlyphQuest {
     shadowStationC.rotation.x = -Math.PI / 2;
     shadowStationC.receiveShadow = true;
     shadowStationC.material.needsUpdate = true;
-    shadowStationC.position.set(
-      POSITIONS.STATION_C.x,
-      0,
-      POSITIONS.STATION_C.z
-    );
+    shadowStationC.position.set(POSITIONS.INIT.x, 0, POSITIONS.INIT.z);
     scene.add(shadowStationC);
 
     const shadowStationDGeometry = new THREE.PlaneGeometry(5, 5);
@@ -153,11 +166,7 @@ export default class GlyphQuest {
     shadowStationD.rotation.x = -Math.PI / 2;
     shadowStationD.receiveShadow = true;
     shadowStationD.material.needsUpdate = true;
-    shadowStationD.position.set(
-      POSITIONS.STATION_D.x,
-      0,
-      POSITIONS.STATION_D.z
-    );
+    shadowStationD.position.set(POSITIONS.INIT.x, 0, POSITIONS.INIT.z);
     scene.add(shadowStationD);
 
     //Create testing stations
@@ -568,11 +577,7 @@ export default class GlyphQuest {
     plane.add(text);
     text.position.set(0, 0, 0.01); // Ensure text is slightly in front of the plane to avoid z-fighting
 
-    plane.position.set(
-      POSITIONS.STATION_A.x,
-      POSITIONS.STATION_A.y,
-      POSITIONS.STATION_A.z
-    );
+    plane.position.set(POSITIONS.INIT.x, POSITIONS.INIT.y, POSITIONS.INIT.z);
 
     return plane;
   }
@@ -594,11 +599,7 @@ export default class GlyphQuest {
     text.sync();
 
     obj.add(text);
-    obj.position.set(
-      POSITIONS.STATION_B.x,
-      POSITIONS.STATION_B.y,
-      POSITIONS.STATION_B.z
-    );
+    obj.position.set(POSITIONS.INIT.x, POSITIONS.INIT.y, POSITIONS.INIT.z);
 
     return obj;
   }
@@ -618,9 +619,9 @@ export default class GlyphQuest {
         });
 
         model.position.set(
-          POSITIONS.STATION_C.x,
-          POSITIONS.STATION_C.y,
-          POSITIONS.STATION_C.z
+          POSITIONS.INIT.x,
+          POSITIONS.INIT.y,
+          POSITIONS.INIT.z
         );
         model.scale.set(0.2, 0.2, 0.2);
         model.rotation.set(0, -Math.PI / 4, 0);
@@ -727,11 +728,7 @@ export default class GlyphQuest {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.material.needsUpdate = true;
-    mesh.position.set(
-      POSITIONS.STATION_D.x,
-      POSITIONS.STATION_D.y,
-      POSITIONS.STATION_D.z
-    );
+    mesh.position.set(POSITIONS.INIT.x, POSITIONS.INIT.y, POSITIONS.INIT.z);
     //mesh.position.set(0, 0, -1);
     mesh.scale.set(0.01, 0.01, 0.01);
     mesh.rotation.set(0, -Math.PI / 4, 0);
@@ -744,9 +741,9 @@ export default class GlyphQuest {
         const model = gltf.scene;
 
         model.position.set(
-          POSITIONS.STATION_E.x,
-          POSITIONS.STATION_E.y,
-          POSITIONS.STATION_E.z
+          POSITIONS.INIT.x,
+          POSITIONS.INIT.y,
+          POSITIONS.INIT.z
         );
 
         model.scale.set(0.1, 0.1, 0.1);

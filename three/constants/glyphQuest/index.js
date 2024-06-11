@@ -52,4 +52,5 @@ export const POSITIONS = {
   STATION_C: new THREE.Vector3(2.5, 0, -2),
   STATION_D: new THREE.Vector3(2.5, 0, -7),
   STATION_E: new THREE.Vector3(0, 0, -12),
+  INIT: new THREE.Vector3(0, 0, -2),
 };
