@@ -574,6 +574,11 @@ export default class GlyphQuest {
 
         model.traverse((child) => {
           if (child.isMesh) {
+            child.material = new THREE.MeshStandardMaterial({
+              color: COLOR.INDIGO,
+              roughness: 0.3,
+              metalness: 0,
+            });
             child.castShadow = true;
             //child.receiveShadow = true;
             child.material.needsUpdate = true;
