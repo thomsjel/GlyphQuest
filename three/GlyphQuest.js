@@ -13,7 +13,7 @@ import { ARButton } from "three/examples/jsm/webxr/ARButton.js";
 
 export default class GlyphQuest {
   constructor() {
-    // Loadings ...
+    // Initialisierung des Lade-Managers, der Ladefortschritt und Abschluss meldet
     const loadingManager = new THREE.LoadingManager(
       () => {
         console.log("Loading complete!");
@@ -22,34 +22,37 @@ export default class GlyphQuest {
         console.log("Loading: " + (loaded / total) * 100 + "%");
       }
     );
+
+    // Initialisierung des GLTFLoaders mit dem Lade-Manager
     this.gltfLoader = new GLTFLoader(loadingManager);
 
+    // Schatteneinstellungen
     this.shadowMapResolution = 2048;
     this.shadowBlur = 50;
 
+    // Radius der Grenze (Boundary) für Stationen
     this.boundaryRadius = 2.05;
 
+    // Variablen für die Speicherung der aktuell besuchten Station und Initialisierung der Liste aller Stationen
     this.currentStation = 0;
     this.stations = [];
     this.boundaries = [];
 
+    // Uhr zur Zeitmessung
     this.clock = new THREE.Clock();
 
+    // Startet die Experience
     this.start();
   }
 
+  // Setzt die aktuelle Station und aktualisiert die Sichtbarkeit der Stationen
   setCurrentStation(station) {
     this.currentStation = station;
-    // Just for testing
-    //this.updateUI();
 
     this.updateStationVisibility();
   }
 
-  updateUI() {
-    document.getElementById("currentStation").innerText = this.currentStation;
-  }
-
+  // Aktualisiert die Sichtbarkeit der Stationen basierend auf der aktuellen Station
   updateStationVisibility() {
     const ueq = document.getElementById("ueq");
     ueq.style.display = "none";
@@ -60,6 +63,7 @@ export default class GlyphQuest {
     });
   }
 
+  // Startet die WebXR-Experience, wenn sie vom Browser unterstützt wird
   async start() {
     if ("xr" in navigator) {
       const supported = await navigator.xr.isSessionSupported("immersive-ar");
@@ -69,9 +73,9 @@ export default class GlyphQuest {
     } else {
       alert("WebXR not available in this browser");
     }
-    //this.startExperience();
   }
 
+  // Hauptfunktion zum Starten der AR-Experience
   async startExperience() {
     let hitTestSource = null;
     let hitTestSourceRequested = false;
@@ -84,64 +88,19 @@ export default class GlyphQuest {
 
     const intro = document.getElementById("intro");
 
+    // Erstellen des Containers für das Rendering
     const container = document.createElement("div");
     container.id = "custom-canvas";
     document.body.appendChild(container);
 
+    // Erstellen der 3D-Szene
     const scene = new THREE.Scene();
 
+    // Hinzufügen von Umgebungslicht zur Szene
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
 
-    // Set up the WebGLRenderer, which handles rendering to the session's base layer.
-    const renderer = new THREE.WebGLRenderer({
-      alpha: true,
-      antialias: true,
-    });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.xr.enabled = true;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.outputEncoding = THREE.sRGBEncoding;
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.needsUpdate = true;
-
-    const camera = new THREE.PerspectiveCamera();
-    camera.matrixAutoUpdate = false;
-
-    container.appendChild(renderer.domElement);
-
-    // Load and play the audio
-    const listener = new THREE.AudioListener();
-    camera.add(listener);
-
-    const sound = new THREE.Audio(listener);
-    const audioLoader = new THREE.AudioLoader();
-
-    audioLoader.load("/finish.mp3", function (buffer) {
-      sound.setBuffer(buffer);
-      sound.loop = false;
-      sound.setVolume(0.8);
-    });
-
-    const arButton = ARButton.createButton(renderer, {
-      requiredFeatures: [
-        "local",
-        "hit-test",
-        "dom-overlay",
-        "light-estimation",
-      ],
-      domOverlay: { root: domOverlay },
-    });
-    document.body.appendChild(arButton);
-
-    // Remove intro screen
-    arButton.addEventListener("click", () => {
-      intro.style.display = "none";
-      ueqButton.style.display = "flex";
-    });
-
-    // Add scene lighting
+    // Hinzufügen von direktionalem Licht zur Szene
     const directionalLight = new THREE.DirectionalLight(0xffffff, 8);
     directionalLight.position.set(-1, 2, 2);
     directionalLight.castShadow = true;
@@ -156,12 +115,65 @@ export default class GlyphQuest {
     directionalLight.shadow.radius = this.shadowBlur;
     scene.add(directionalLight);
 
+    // Konfiguration des WebGL-Renderers
+    const renderer = new THREE.WebGLRenderer({
+      alpha: true,
+      antialias: true,
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.xr.enabled = true;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.needsUpdate = true;
+
+    // Initialisierung der Kamera
+    const camera = new THREE.PerspectiveCamera();
+    camera.matrixAutoUpdate = false;
+
+    container.appendChild(renderer.domElement);
+
+    // Load and play the audio
+    const listener = new THREE.AudioListener();
+    camera.add(listener);
+
+    // Laden und Abspielen von Audio
+    const sound = new THREE.Audio(listener);
+    const audioLoader = new THREE.AudioLoader();
+
+    audioLoader.load("/finish.mp3", function (buffer) {
+      sound.setBuffer(buffer);
+      sound.loop = false;
+      sound.setVolume(0.8);
+    });
+
+    // Hinzufügen des AR-Buttons und Konfiguration der erforderlichen Features
+    const arButton = ARButton.createButton(renderer, {
+      requiredFeatures: [
+        "local",
+        "hit-test",
+        "dom-overlay",
+        "light-estimation",
+      ],
+      domOverlay: { root: domOverlay },
+    });
+    document.body.appendChild(arButton);
+
+    // Entfernen des Intro-Screens nach Klick auf den AR-Button
+    arButton.addEventListener("click", () => {
+      intro.style.display = "none";
+      ueqButton.style.display = "flex";
+    });
+
+    // Erstellen eines "Fadenkreuzes" für Hit-Tests
     const reticleGeometry = new THREE.RingGeometry(0.1, 0.11, 32);
     const reticle = new THREE.Mesh(reticleGeometry, MATERIALS.RETICLE);
     reticle.rotation.x = -Math.PI / 2;
     reticle.visible = false;
     scene.add(reticle);
 
+    // Erstellen einer Schattenebene
     const shadowGeometry = new THREE.PlaneGeometry(5, 5);
     const shadowMaterial = new THREE.ShadowMaterial({
       opacity: 0.2,
@@ -173,7 +185,7 @@ export default class GlyphQuest {
     shadowPlane.position.set(POSITIONS.INIT.x, 0, POSITIONS.INIT.z);
     scene.add(shadowPlane);
 
-    //Create testing stations
+    // Erstellen und Hinzufügen der Stationen zur Szene
     const stationA = this.createStationA();
     stationA.name = "Station A";
     scene.add(stationA);
@@ -207,10 +219,12 @@ export default class GlyphQuest {
       finalAnimation,
     ];
 
+    // Animationsfunktion
     const animate = () => {
       renderer.setAnimationLoop(render);
     };
 
+    // Render-Funktion für die Szene
     const render = async (timestamp, frame) => {
       if (frame) {
         const referenceSpace = renderer.xr.getReferenceSpace();
@@ -235,6 +249,7 @@ export default class GlyphQuest {
           }
         }
 
+        // Hit-Test-Quelle anfordern, falls noch nicht geschehen
         if (hitTestSourceRequested === false) {
           session
             .requestReferenceSpace("viewer")
@@ -249,6 +264,7 @@ export default class GlyphQuest {
           hitTestSourceRequested = true;
         }
 
+        // Verarbeiten der Hit-Test-Ergebnisse
         if (hitTestSource) {
           const hitTestResults = frame.getHitTestResults(hitTestSource);
 
@@ -265,7 +281,7 @@ export default class GlyphQuest {
             let quaternion = new THREE.Quaternion();
             let scale = new THREE.Vector3();
 
-            // Decompose the matrix to get the quaternion
+            // Matrix dekomponieren, um Quaternion zu erhalten
             reticle.matrix.decompose(position, quaternion, scale);
 
             if (!groundHeightSet) {
@@ -273,6 +289,7 @@ export default class GlyphQuest {
               groundHeightSet = true;
             }
 
+            // Position einiger Stationen auf den Boden setzen
             if (position.y <= groundHeight + 0.001) {
               this.setToFloorPosition(stationC, hitPose);
               this.setToFloorPosition(stationD, hitPose);
@@ -286,7 +303,7 @@ export default class GlyphQuest {
           }
         }
 
-        // Check boundaries for all stations
+        // Überprüfen der Grenzen für alle Stationen
         let closestStation = null;
         let minDistance = Infinity;
         const stations = [
@@ -313,6 +330,7 @@ export default class GlyphQuest {
           "Station E",
         ];
 
+        // UI-Button für die aktuelle Station aktualisieren
         if (this.currentStation < 5) {
           ueqButton.addEventListener("click", () => {
             ueq.setAttribute("title", stationNames[this.currentStation]);
@@ -328,30 +346,24 @@ export default class GlyphQuest {
           }
         }
 
-        /*
-        if (closestStation) {
-          ueq.setAttribute("title", stationNames[this.currentStation]);
-          ueq.style.display = "flex";
-        } else {
-          ueq.setAttribute("title", "undefined");
-          ueq.style.display = "none";
-        }
-*/
-        // Enable billboarding
+        // Billboard-Effekt aktivieren, sodass Station A der Kamera folgt
         if (stationA) {
           stationA.lookAt(camera.getWorldPosition(new THREE.Vector3()));
         }
 
         const delta = this.clock.getDelta();
 
+        // Animations-Mixer aktualisieren
         if (this.mixer) this.mixer.update(delta);
 
+        // Szene rendern
         renderer.render(scene, camera);
       }
     };
     animate();
   }
 
+  // Erstellt ein "Fadenkreuz" für die Hit-Tests
   createReticle() {
     const geometry = new THREE.RingGeometry(0.1, 0.11, 32);
     const reticle = new THREE.Mesh(geometry, MATERIALS.RETICLE);
@@ -360,22 +372,21 @@ export default class GlyphQuest {
     return reticle;
   }
 
+  // Erstellt Station A mit Text
   createStationA() {
-    // Create text using troika-three-text
     const text = new Text();
     text.text = TEXTS.STATION_ONE;
-    text.fontSize = 0.07; // Adjust the font size
+    text.fontSize = 0.07; // Schriftgröße anpassen
     text.color = 0xffffff;
-    text.maxWidth = 0.85; // Ensure the text does not overflow the plane width
+    text.maxWidth = 0.85; // Textbreite anpassen
     text.overflowWrap = "break-word";
     text.anchorX = "center";
     text.anchorY = "middle";
     text.textAlign = "justify";
 
-    // Update the text's geometry
+    // Aktualisierung der Text-Geometrie
     text.sync();
 
-    // Create a plane geometry to serve as the background for the text
     const planeGeometry = new THREE.PlaneGeometry(1.0, 0.6);
     const planeMaterial = new THREE.MeshBasicMaterial({
       color: 0x000000,
@@ -384,9 +395,8 @@ export default class GlyphQuest {
     });
     const plane = new THREE.Mesh(planeGeometry, planeMaterial);
 
-    // Add the text to the plane
     plane.add(text);
-    text.position.set(0, 0, 0.01); // Ensure text is slightly in front of the plane to avoid z-fighting
+    text.position.set(0, 0, 0.01); // Text leicht vor die Billboard-Ebene setzen
 
     plane.position.set(POSITIONS.INIT.x, POSITIONS.INIT.y, POSITIONS.INIT.z);
     plane.visible = true;
@@ -394,13 +404,13 @@ export default class GlyphQuest {
     return plane;
   }
 
+  // Erstellt Station B mit Text
   createStationB() {
-    // Create text using troika-three-text
     const text = new Text();
     text.text = TEXTS.STATION_TWO;
-    text.fontSize = 0.07; // Adjust the font size
+    text.fontSize = 0.07; // Schriftgröße anpassen
     text.color = 0xff0000;
-    text.maxWidth = 1; // Ensure the text does not overflow the plane width
+    text.maxWidth = 1; // Textbreite anpassen
     text.overflowWrap = "break-word";
     text.anchorX = "center";
     text.anchorY = "middle";
@@ -408,7 +418,6 @@ export default class GlyphQuest {
 
     const obj = new THREE.Object3D();
 
-    // Update the text's geometry
     text.sync();
 
     obj.add(text);
@@ -418,6 +427,7 @@ export default class GlyphQuest {
     return obj;
   }
 
+  // Erstellt Station C mit einem 3D-Modell
   createStationC() {
     return new Promise((resolve) => {
       this.gltfLoader.load("/models/custom-model.glb", (gltf) => {
@@ -446,6 +456,7 @@ export default class GlyphQuest {
     });
   }
 
+  // Erstellt Station D mit einem Text, der verschiedene Texturen verwendet
   async createStationD() {
     const repeater = 0.05;
     const loader = new FontLoader();
@@ -551,6 +562,7 @@ export default class GlyphQuest {
     return mesh;
   }
 
+  // Erstellt Station E mit einem 3D-Modell
   createStationE() {
     return new Promise((resolve) => {
       this.gltfLoader.load("/models/station5.glb", (gltf) => {
@@ -565,6 +577,7 @@ export default class GlyphQuest {
     });
   }
 
+  // Zeigt die finale Animation mit einem 3D-Modell
   showFinalAnimation() {
     return new Promise((resolve) => {
       this.gltfLoader.load("/models/mannequin.glb", (gltf) => {
@@ -596,6 +609,7 @@ export default class GlyphQuest {
     });
   }
 
+  // Überprüft die Distanz zwischen der Station und der Kamera
   boundaryCheck(station, camera) {
     const stationPosition = new THREE.Vector3();
     station.getWorldPosition(stationPosition);
@@ -606,8 +620,8 @@ export default class GlyphQuest {
     return distance;
   }
 
+  // Setzt die Position eines Objekts auf den Boden basierend auf der Hit-Test-Position
   setToFloorPosition(radius, hitPose, yOffset = false) {
-    //groundHeight = hitPose.transform.position.y;
     if (radius) {
       radius.position.set(
         radius.position.x,
@@ -619,6 +633,7 @@ export default class GlyphQuest {
     }
   }
 
+  // Erstellt eine visuelle Begrenzung um eine Station und fügt sie der Szene hinzu
   createBoundary(station, scene) {
     const radiusGeometry = new THREE.RingGeometry(2, this.boundaryRadius, 64);
     const radius = new THREE.Mesh(radiusGeometry, MATERIALS.BOUNDARY);
