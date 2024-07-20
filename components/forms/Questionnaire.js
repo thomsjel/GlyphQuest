@@ -73,7 +73,7 @@ function Questionnaire({ onEmailSending, onEmailSent, onForm, ...props }) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        email: "it221506@fhstp.ac.at",
+        email: process.env.NEXT_PUBLIC_RECEIVER_MAIL_ADDRESS,
         subject: `UEQ Results for ${station}`,
         message: `name: ${station} \n\n ${JSON.stringify(data, null, 2)}`,
       }),

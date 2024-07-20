@@ -10,15 +10,15 @@ export default async (req, res) => {
       port: 587,
       secure: false, // True for 465, false for other ports
       auth: {
-        user: "office@thomsjel.com", // Replace with your email
-        pass: "sVUAZS7mBa4.", // Replace with your password
+        user: process.env.SENDER_MAIL_ADDRESS, // Replace with your email
+        pass: process.env.SENDER_MAIL_PW, // Replace with your password
       },
     });
 
     try {
       // Send mail with defined transport object
       let info = await transporter.sendMail({
-        from: `"GlyphQuest"<office@thomsjel.com>`, // Sender address
+        from: `"GlyphQuest"<process.env.SENDER_MAIL_ADDRESS>`, // Sender address
         to: email, // List of receivers
         subject: subject, // Subject line
         text: message, // Plain text body
