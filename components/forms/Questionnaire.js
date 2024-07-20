@@ -4,15 +4,6 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FaAngleRight, FaRegPaperPlane } from "react-icons/fa6";
 
-const scale = {
-  attractiveness: "attraktivität",
-  perspicuity: "klarheit",
-  efficiency: "effizienz",
-  dependability: "zuverlässigkeit",
-  stimulation: "stimulation",
-  novelty: "Neuheit",
-};
-
 const questions = [
   {
     q: 1,

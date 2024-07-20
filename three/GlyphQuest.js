@@ -36,7 +36,6 @@ export default class GlyphQuest {
     // Variablen für die Speicherung der aktuell besuchten Station und Initialisierung der Liste aller Stationen
     this.currentStation = 0;
     this.stations = [];
-    this.boundaries = [];
 
     // Uhr zur Zeitmessung
     this.clock = new THREE.Clock();
@@ -63,12 +62,17 @@ export default class GlyphQuest {
     });
   }
 
-  // Startet die WebXR-Experience, wenn sie vom Browser unterstützt wird
+  // Ruft startExperience() auf. sofern WebXR vom Browser unterstützt wird
   async start() {
     if ("xr" in navigator) {
       const supported = await navigator.xr.isSessionSupported("immersive-ar");
       if (supported) {
         this.startExperience();
+      } else {
+        const noArSupport = document.createElement("div");
+        noArSupport.classList.add("noxr");
+        noArSupport.innerText = "Immersive AR is not supported";
+        document.body.appendChild(noArSupport);
       }
     } else {
       alert("WebXR not available in this browser");
@@ -108,7 +112,7 @@ export default class GlyphQuest {
     directionalLight.shadow.mapSize.height = this.shadowMapResolution;
     directionalLight.shadow.camera.near = 0.01;
     directionalLight.shadow.camera.far = 20;
-    directionalLight.shadow.camera.left = -10; // Adjust to cover your scene
+    directionalLight.shadow.camera.left = -10; // Anpassen, um Ihre Szene abzudecken
     directionalLight.shadow.camera.right = 10;
     directionalLight.shadow.camera.top = 4;
     directionalLight.shadow.camera.bottom = -4;
@@ -134,11 +138,10 @@ export default class GlyphQuest {
 
     container.appendChild(renderer.domElement);
 
-    // Load and play the audio
+    // Laden und Abspielen von Audio
     const listener = new THREE.AudioListener();
     camera.add(listener);
 
-    // Laden und Abspielen von Audio
     const sound = new THREE.Audio(listener);
     const audioLoader = new THREE.AudioLoader();
 
@@ -375,6 +378,7 @@ export default class GlyphQuest {
   // Erstellt Station A mit Text
   createStationA() {
     const text = new Text();
+    text.font = "/fonts/Arial.ttf";
     text.text = TEXTS.STATION_ONE;
     text.fontSize = 0.07; // Schriftgröße anpassen
     text.color = 0xffffff;
@@ -408,6 +412,7 @@ export default class GlyphQuest {
   createStationB() {
     const text = new Text();
     text.text = TEXTS.STATION_TWO;
+    text.font = "/fonts/Arial.ttf";
     text.fontSize = 0.07; // Schriftgröße anpassen
     text.color = 0xff0000;
     text.maxWidth = 1; // Textbreite anpassen
@@ -529,7 +534,6 @@ export default class GlyphQuest {
     };
 
     const line = TEXTS.STATION_FOUR;
-    const lineHeight = 110; // Adjust this value to set the line height
     const textSize = 80;
     const textHeight = 40;
 
@@ -555,9 +559,7 @@ export default class GlyphQuest {
     mesh.receiveShadow = true;
     mesh.material.needsUpdate = true;
     mesh.position.set(POSITIONS.INIT.x, POSITIONS.INIT.y, POSITIONS.INIT.z);
-    //mesh.position.set(0, 0, -1);
     mesh.scale.set(0.01, 0.01, 0.01);
-    //mesh.rotation.set(0, -Math.PI / 4, 0);
     mesh.visible = false;
     return mesh;
   }
