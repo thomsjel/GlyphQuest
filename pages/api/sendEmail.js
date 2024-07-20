@@ -6,7 +6,7 @@ export default async (req, res) => {
 
     // Create reusable transporter object using SMTP transport
     const transporter = nodemailer.createTransport({
-      host: "smtp.world4you.com", // Replace with your mail server
+      host: process.env.SENDER_MAIL_SERVER, // Replace with your mail server
       port: 587,
       secure: false, // True for 465, false for other ports
       auth: {
@@ -18,7 +18,7 @@ export default async (req, res) => {
     try {
       // Send mail with defined transport object
       let info = await transporter.sendMail({
-        from: `"GlyphQuest"<process.env.SENDER_MAIL_ADDRESS>`, // Sender address
+        from: `"GlyphQuest"<${process.env.SENDER_MAIL_ADDRESS}>`, // Sender address
         to: email, // List of receivers
         subject: subject, // Subject line
         text: message, // Plain text body
