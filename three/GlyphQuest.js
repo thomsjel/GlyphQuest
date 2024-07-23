@@ -386,7 +386,7 @@ export default class GlyphQuest {
     text.overflowWrap = "break-word";
     text.anchorX = "center";
     text.anchorY = "middle";
-    text.textAlign = "justify";
+    text.textAlign = "left";
 
     // Aktualisierung der Text-Geometrie
     text.sync();
