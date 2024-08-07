@@ -26,6 +26,7 @@
     "react-icons": "^5.1.0",
     "react-toastify": "^10.0.5",
     "three": "^0.161.0",
+    "three-msdf-text-utils": "^1.1.7",
     "troika-three-text": "^0.49.1",
     "use-react-screenshot": "^4.0.0"
   },
