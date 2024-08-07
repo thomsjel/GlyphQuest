@@ -159,11 +159,16 @@ export default class MSDF {
     scene.add(shadowPlane);
 
     // Erstellen und Hinzufügen der Stationen zur Szene
-    const stationA = this.createStationA();
+    const stationA = await this.createStationA();
     stationA.name = "Station A";
+    stationA.visible = true;
     scene.add(stationA);
 
-    this.stations = [stationA];
+    const stationB = this.createStationB();
+    stationB.name = "Station B";
+    scene.add(stationB);
+
+    this.stations = [stationA, stationB];
 
     // Animationsfunktion
     const animate = () => {
@@ -237,9 +242,6 @@ export default class MSDF {
 
             // Position einiger Stationen auf den Boden setzen
             if (position.y <= groundHeight + 0.001) {
-              this.setToFloorPosition(stationC, hitPose);
-              this.setToFloorPosition(stationD, hitPose);
-              this.setToFloorPosition(finalAnimation, hitPose);
               this.setToFloorPosition(shadowPlane, hitPose);
             }
 
@@ -249,24 +251,9 @@ export default class MSDF {
           }
         }
 
-        // Überprüfen der Grenzen für alle Stationen
-        let closestStation = null;
-        let minDistance = Infinity;
-        const stations = [{ station: stationA }];
-
-        for (const { station } of stations) {
-          const distance = this.boundaryCheck(station, camera);
-          if (distance < this.boundaryRadius && distance < minDistance) {
-            closestStation = station;
-            minDistance = distance;
-          }
-        }
-
-        const stationNames = ["Station A"];
-
         // Billboard-Effekt aktivieren, sodass Station A der Kamera folgt
         if (stationA) {
-          stationA.lookAt(camera.getWorldPosition(new THREE.Vector3()));
+          //stationA.lookAt(camera.getWorldPosition(new THREE.Vector3()));
         }
 
         const delta = this.clock.getDelta();
@@ -294,30 +281,51 @@ export default class MSDF {
   createStationA() {
     return new Promise((resolve, reject) => {
       Promise.all([
-        loadFontAtlas("/fonts/Arial.png"),
-        loadFont("/fonts/Arial-msdf.json"),
+        this.loadFontAtlas("/fonts/Arial.png"),
+        this.loadFont("/fonts/Arial-msdf.json"),
       ])
         .then(([atlas, font]) => {
           const geometry = new MSDFTextGeometry({
-            text: "Hello World",
+            text: `A`,
             font: font.data,
           });
 
           const material = new MSDFTextMaterial();
           material.uniforms.uMap.value = atlas;
+          material.side = THREE.DoubleSide;
+          //material.uniforms.uColor.value = { r: 0, g: 0, b: 0 };
 
           const mesh = new THREE.Mesh(geometry, material);
-          mesh.position.set(
-            POSITIONS.INIT.x,
-            POSITIONS.INIT.y,
-            POSITIONS.INIT.z
-          );
+          mesh.scale.set(0.016, 0.016, 0.016);
+          mesh.rotation.y = Math.PI;
+          mesh.rotation.z = Math.PI;
+          mesh.position.set(-0.35, -0.145, -1);
           resolve(mesh);
         })
         .catch((error) => {
           reject(error);
         });
     });
+  }
+
+  createStationB() {
+    const text = new Text();
+    text.text = `A`;
+    text.font = "/fonts/Arial.ttf";
+    text.fontSize = 0.7; // Schriftgröße anpassen
+    //text.color = 0xffffff;
+    //text.maxWidth = 1; // Textbreite anpassen
+    text.overflowWrap = "break-word";
+    text.anchorX = "center";
+    text.anchorY = "middle";
+    text.textAlign = "center";
+
+    text.sync();
+
+    text.position.set(0.35, POSITIONS.INIT.y, -1);
+    //obj.visible = false;
+
+    return text;
   }
 
   loadFontAtlas(path) {
@@ -336,17 +344,6 @@ export default class MSDF {
     });
 
     return promise;
-  }
-
-  // Überprüft die Distanz zwischen der Station und der Kamera
-  boundaryCheck(station, camera) {
-    const stationPosition = new THREE.Vector3();
-    station.getWorldPosition(stationPosition);
-    const cameraPosition = new THREE.Vector3();
-    camera.getWorldPosition(cameraPosition);
-    const distance = stationPosition.distanceTo(cameraPosition);
-
-    return distance;
   }
 
   // Setzt die Position eines Objekts auf den Boden basierend auf der Hit-Test-Position
