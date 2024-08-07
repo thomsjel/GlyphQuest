@@ -1,4 +1,4 @@
-import GlyphQuest from "@/three/GlyphQuest";
+import MSDF from "@/three/MSDF";
 import { useEffect, useRef, useState } from "react";
 import Portal from "@/components/Portal";
 import RateReviewIcon from "@mui/icons-material/RateReview";
@@ -12,7 +12,7 @@ export default function MsdfPage() {
         return;
       } else {
         setTimeout(() => {
-          sceneRef.current = new GlyphQuest();
+          sceneRef.current = new MSDF();
         }, 500);
       }
     }
