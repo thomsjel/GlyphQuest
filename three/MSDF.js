@@ -313,7 +313,7 @@ export default class MSDF {
     text.text = `A`;
     text.font = "/fonts/Arial.ttf";
     text.fontSize = 0.7; // Schriftgröße anpassen
-    //text.color = 0xffffff;
+    text.color = 0xffffff;
     //text.maxWidth = 1; // Textbreite anpassen
     text.overflowWrap = "break-word";
     text.anchorX = "center";

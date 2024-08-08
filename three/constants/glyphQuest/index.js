@@ -8,10 +8,8 @@ export const COLOR = {
 };
 
 export const TEXTS = {
-  STATION_ONE:
-    "Gutenberg druckte in Mainz das erste Buch mit beweglichen Bleilettern und löste damit eine Medienrevolution aus.",
-  STATION_TWO:
-    "Ligaturen sind Buchstabenverbindungen, um Leerräume oder Überschneidungen mit nebenstehenden Buchstaben zu vermeiden.",
+  STATION_ONE: `Gutenberg druckte in \nMainz das erste Buch mit \nbeweglichen Bleilettern \nund löste damit eine \nMedienrevolution aus.`,
+  STATION_TWO: `Ligaturen sind Buchstaben-\nverbindungen, um Leerräume\noder Überschneidungen mit\nnebenstehenden Buchstaben\nzu vermeiden.`,
   STATION_THREE: "Station 3",
   STATION_FOUR: `PAGINA`,
   STATION_FIVE: "Station 5",

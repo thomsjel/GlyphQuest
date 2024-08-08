@@ -1,3 +1,4 @@
+import { MSDFTextGeometry, MSDFTextMaterial } from "three-msdf-text-utils";
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { Text } from "troika-three-text";
@@ -189,11 +190,11 @@ export default class GlyphQuest {
     scene.add(shadowPlane);
 
     // Erstellen und Hinzufügen der Stationen zur Szene
-    const stationA = this.createStationA();
+    const stationA = await this.createStationA();
     stationA.name = "Station A";
     scene.add(stationA);
 
-    const stationB = this.createStationB();
+    const stationB = await this.createStationB();
     stationB.name = "Station B";
     scene.add(stationB);
 
@@ -377,59 +378,102 @@ export default class GlyphQuest {
 
   // Erstellt Station A mit Text
   createStationA() {
-    const text = new Text();
-    text.font = "/fonts/Arial.ttf";
-    text.text = TEXTS.STATION_ONE;
-    text.fontSize = 0.07; // Schriftgröße anpassen
-    text.color = 0xffffff;
-    text.maxWidth = 0.85; // Textbreite anpassen
-    text.overflowWrap = "break-word";
-    text.anchorX = "center";
-    text.anchorY = "middle";
-    text.textAlign = "left";
+    return new Promise((resolve, reject) => {
+      Promise.all([
+        this.loadFontAtlas("/fonts/Arial.png"),
+        this.loadFont("/fonts/Arial-msdf.json"),
+      ])
+        .then(([atlas, font]) => {
+          const msdfTextGeometry = new MSDFTextGeometry({
+            text: TEXTS.STATION_ONE,
+            font: font.data,
+          });
 
-    // Aktualisierung der Text-Geometrie
-    text.sync();
+          const msdfTextMaterial = new MSDFTextMaterial();
+          msdfTextMaterial.uniforms.uMap.value = atlas;
+          msdfTextMaterial.side = THREE.DoubleSide;
 
-    const planeGeometry = new THREE.PlaneGeometry(1.0, 0.6);
-    const planeMaterial = new THREE.MeshBasicMaterial({
-      color: 0x000000,
-      transparent: true,
-      opacity: 0.8,
+          const msdfTextMesh = new THREE.Mesh(
+            msdfTextGeometry,
+            msdfTextMaterial
+          );
+          msdfTextMesh.scale.set(0.0017, 0.0017, 0.0017);
+          msdfTextMesh.rotation.y = Math.PI;
+          msdfTextMesh.rotation.z = Math.PI;
+
+          // Erstellen einer Billboard-Ebene für den Text
+          const billboardGeometry = new THREE.PlaneGeometry(1.0, 0.6);
+          const billboardMaterial = new THREE.MeshBasicMaterial({
+            color: 0x000000,
+            transparent: true,
+            opacity: 0.8,
+          });
+          const billboardMesh = new THREE.Mesh(
+            billboardGeometry,
+            billboardMaterial
+          );
+
+          billboardMesh.add(msdfTextMesh);
+          msdfTextMesh.position.set(-0.4, -0.17, 0.01); // Text leicht vor die Billboard-Ebene setzen
+
+          billboardMesh.position.set(
+            POSITIONS.INIT.x,
+            POSITIONS.INIT.y,
+            POSITIONS.INIT.z
+          );
+          billboardMesh.visible = true;
+
+          resolve(billboardMesh);
+        })
+        .catch((error) => {
+          reject(error);
+        });
     });
-    const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-
-    plane.add(text);
-    text.position.set(0, 0, 0.01); // Text leicht vor die Billboard-Ebene setzen
-
-    plane.position.set(POSITIONS.INIT.x, POSITIONS.INIT.y, POSITIONS.INIT.z);
-    plane.visible = true;
-
-    return plane;
   }
 
   // Erstellt Station B mit Text
   createStationB() {
-    const text = new Text();
-    text.text = TEXTS.STATION_TWO;
-    text.font = "/fonts/Arial.ttf";
-    text.fontSize = 0.07; // Schriftgröße anpassen
-    text.color = 0xff0000;
-    text.maxWidth = 1; // Textbreite anpassen
-    text.overflowWrap = "break-word";
-    text.anchorX = "center";
-    text.anchorY = "middle";
-    text.textAlign = "center";
+    return new Promise((resolve, reject) => {
+      Promise.all([
+        this.loadFontAtlas("/fonts/Arial.png"),
+        this.loadFont("/fonts/Arial-msdf.json"),
+      ])
+        .then(([atlas, font]) => {
+          const msdfTextGeometry = new MSDFTextGeometry({
+            text: TEXTS.STATION_TWO,
+            font: font.data,
+          });
 
-    const obj = new THREE.Object3D();
+          const msdfTextMaterial = new MSDFTextMaterial();
+          msdfTextMaterial.uniforms.uMap.value = atlas;
+          msdfTextMaterial.side = THREE.DoubleSide;
+          msdfTextMaterial.uniforms.uColor.value = new THREE.Color(0xff0000);
 
-    text.sync();
+          const msdfTextMesh = new THREE.Mesh(
+            msdfTextGeometry,
+            msdfTextMaterial
+          );
+          msdfTextMesh.scale.set(0.0017, 0.0017, 0.0017);
+          msdfTextMesh.rotation.y = Math.PI;
+          msdfTextMesh.rotation.z = Math.PI;
 
-    obj.add(text);
-    obj.position.set(POSITIONS.INIT.x, POSITIONS.INIT.y, POSITIONS.INIT.z);
-    obj.visible = false;
+          const obj = new THREE.Object3D();
 
-    return obj;
+          obj.add(msdfTextMesh);
+          msdfTextMesh.position.set(-0.4, -0.17, 0.01);
+          obj.position.set(
+            POSITIONS.INIT.x,
+            POSITIONS.INIT.y,
+            POSITIONS.INIT.z
+          );
+          obj.visible = false;
+
+          resolve(obj);
+        })
+        .catch((error) => {
+          reject(error);
+        });
+    });
   }
 
   // Erstellt Station C mit einem 3D-Modell
@@ -609,6 +653,24 @@ export default class GlyphQuest {
         resolve(model);
       });
     });
+  }
+
+  loadFontAtlas(path) {
+    const promise = new Promise((resolve, reject) => {
+      const loader = new THREE.TextureLoader();
+      loader.load(path, resolve);
+    });
+
+    return promise;
+  }
+
+  loadFont(path) {
+    const promise = new Promise((resolve, reject) => {
+      const loader = new FontLoader();
+      loader.load(path, resolve);
+    });
+
+    return promise;
   }
 
   // Überprüft die Distanz zwischen der Station und der Kamera
