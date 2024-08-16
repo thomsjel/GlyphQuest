@@ -154,12 +154,8 @@ export default class GlyphQuest {
 
     // Hinzufügen des AR-Buttons und Konfiguration der erforderlichen Features
     const arButton = ARButton.createButton(renderer, {
-      requiredFeatures: [
-        "local",
-        "hit-test",
-        "dom-overlay",
-        "light-estimation",
-      ],
+      requiredFeatures: ["local", "hit-test", "dom-overlay"],
+      optionalFeatures: ["light-estimation"],
       domOverlay: { root: domOverlay },
     });
     document.body.appendChild(arButton);
@@ -233,8 +229,24 @@ export default class GlyphQuest {
       if (frame) {
         const referenceSpace = renderer.xr.getReferenceSpace();
         const session = renderer.xr.getSession();
-        const lightProbe = await session.requestLightProbe();
-        const lightEstimation = frame.getLightEstimate(lightProbe);
+        let lightProbe, lightEstimation;
+
+        try {
+          // Versuch eine Lichtsonde anzufordern
+          if (session.requestLightProbe) {
+            lightProbe = await session.requestLightProbe();
+          }
+        } catch (error) {
+          console.warn(
+            "Light estimation not supported or requestLightProbe failed:",
+            error
+          );
+        }
+
+        if (lightProbe && frame.getLightEstimate) {
+          // Versuch eine Lichtschätzung zu erhalten, sofern diese verfügbar ist
+          lightEstimation = frame.getLightEstimate(lightProbe);
+        }
 
         if (lightEstimation) {
           const { primaryLightDirection, primaryLightIntensity } =
@@ -249,7 +261,7 @@ export default class GlyphQuest {
           }
 
           if (primaryLightIntensity) {
-            directionalLight.intensity = primaryLightIntensity.y; // Using Y component as an example
+            directionalLight.intensity = primaryLightIntensity.y; // Verwenden der Y-Komponente für die Intensität
           }
         }
 
@@ -274,12 +286,10 @@ export default class GlyphQuest {
 
           if (hitTestResults.length > 0) {
             const hit = hitTestResults[0];
-            const hitPose = hitTestResults[0].getPose(referenceSpace);
+            const hitPose = hit.getPose(referenceSpace);
 
             reticle.visible = true;
-            reticle.matrix.fromArray(
-              hit.getPose(referenceSpace).transform.matrix
-            );
+            reticle.matrix.fromArray(hitPose.transform.matrix);
 
             let position = new THREE.Vector3();
             let quaternion = new THREE.Quaternion();
@@ -364,6 +374,7 @@ export default class GlyphQuest {
         renderer.render(scene, camera);
       }
     };
+
     animate();
   }
 

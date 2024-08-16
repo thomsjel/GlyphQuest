@@ -1,4 +1,4 @@
-import MSDF from "@/three/MSDF";
+import Comparison from "@/three/Comparison";
 import { useEffect, useRef, useState } from "react";
 import Portal from "@/components/Portal";
 import RateReviewIcon from "@mui/icons-material/RateReview";
@@ -12,7 +12,7 @@ export default function MsdfPage() {
         return;
       } else {
         setTimeout(() => {
-          sceneRef.current = new MSDF();
+          sceneRef.current = new Comparison();
         }, 500);
       }
     }

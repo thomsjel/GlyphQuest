@@ -78,7 +78,7 @@ export default class MSDF {
     const scene = new THREE.Scene();
 
     // Hinzufügen von Umgebungslicht zur Szene
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1);
     scene.add(ambientLight);
 
     // Hinzufügen von direktionalem Licht zur Szene
@@ -134,7 +134,7 @@ export default class MSDF {
         "local",
         "hit-test",
         "dom-overlay",
-        "light-estimation",
+        // "light-estimation",
       ],
     });
     document.body.appendChild(arButton);
@@ -166,6 +166,7 @@ export default class MSDF {
 
     const stationB = this.createStationB();
     stationB.name = "Station B";
+    stationB.visible = true;
     scene.add(stationB);
 
     this.stations = [stationA, stationB];
@@ -180,6 +181,7 @@ export default class MSDF {
       if (frame) {
         const referenceSpace = renderer.xr.getReferenceSpace();
         const session = renderer.xr.getSession();
+        /*
         const lightProbe = await session.requestLightProbe();
         const lightEstimation = frame.getLightEstimate(lightProbe);
 
@@ -199,6 +201,7 @@ export default class MSDF {
             directionalLight.intensity = primaryLightIntensity.y; // Using Y component as an example
           }
         }
+          */
 
         // Hit-Test-Quelle anfordern, falls noch nicht geschehen
         if (hitTestSourceRequested === false) {
@@ -293,7 +296,7 @@ export default class MSDF {
           const material = new MSDFTextMaterial();
           material.uniforms.uMap.value = atlas;
           material.side = THREE.DoubleSide;
-          //material.uniforms.uColor.value = { r: 0, g: 0, b: 0 };
+          material.uniforms.uColor.value = new THREE.Color(0x000000);
 
           const mesh = new THREE.Mesh(geometry, material);
           mesh.scale.set(0.016, 0.016, 0.016);
@@ -313,12 +316,13 @@ export default class MSDF {
     text.text = `A`;
     text.font = "/fonts/Arial.ttf";
     text.fontSize = 0.7; // Schriftgröße anpassen
-    text.color = 0xffffff;
+    text.color = 0x000000;
     //text.maxWidth = 1; // Textbreite anpassen
     text.overflowWrap = "break-word";
     text.anchorX = "center";
     text.anchorY = "middle";
     text.textAlign = "center";
+    //text.material = new THREE.MeshBasicMaterial({ color: 0x818cf8, opacity: 1 });
 
     text.sync();
 
