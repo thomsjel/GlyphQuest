@@ -184,9 +184,9 @@ export default class Billboards {
     shadowPlane.position.set(POSITIONS.INIT.x, 0, POSITIONS.INIT.z);
     scene.add(shadowPlane);
 
-    const stationBillboards = await this.createBillboards();
-    //stationBillboards.name = "Station Billboards";
-    //scene.add(stationBillboards);
+    const stationBillboards = this.createBillboards();
+    stationBillboards.name = "Station Billboards";
+    scene.add(stationBillboards);
 
     // Erstellen und Hinzufügen der Stationen zur Szene
     const stationA = await this.createStationA();
@@ -392,13 +392,22 @@ export default class Billboards {
   }
 
   createBillboards() {
+    this.billboards = new THREE.Object3D();
     this.createBlueBillboard().then((blueBillboard) => {
-      this.scene.add(blueBillboard);
+      this.blueBillboard = blueBillboard;
+      this.blueBillboard.name = "Blue Billboard";
+      this.billboards.add(blueBillboard);
     });
 
     this.createBlackBillboard().then((blackBillboard) => {
-      this.scene.add(blackBillboard);
+      this.blackBillboard = blackBillboard;
+      this.blackBillboard.name = "Black Billboard";
+      this.billboards.add(blackBillboard);
     });
+
+    this.billboards.position.set(POSITIONS.INIT.x, 0, 0);
+
+    return this.billboards;
   }
 
   createBlueBillboard() {
@@ -440,8 +449,8 @@ export default class Billboards {
           msdfTextMesh.position.set(-0.4, -0.17, 0.01); // Text leicht vor die Billboard-Ebene setzen
 
           billboardMesh.position.set(
-            POSITIONS.INIT.x - 0.6,
-            POSITIONS.INIT.y,
+            POSITIONS.INIT.x,
+            POSITIONS.INIT.y + 0.35,
             POSITIONS.INIT.z
           );
           billboardMesh.visible = true;
@@ -494,8 +503,8 @@ export default class Billboards {
           msdfTextMesh.position.set(-0.4, -0.17, 0.01); // Text leicht vor die Billboard-Ebene setzen
 
           billboardMesh.position.set(
-            POSITIONS.INIT.x + 0.6,
-            POSITIONS.INIT.y,
+            POSITIONS.INIT.x,
+            POSITIONS.INIT.y - 0.35,
             POSITIONS.INIT.z
           );
           billboardMesh.visible = true;
@@ -553,7 +562,7 @@ export default class Billboards {
             POSITIONS.INIT.y,
             POSITIONS.INIT.z
           );
-          billboardMesh.visible = true;
+          billboardMesh.visible = false;
 
           resolve(billboardMesh);
         })
