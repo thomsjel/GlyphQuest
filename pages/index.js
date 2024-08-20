@@ -75,7 +75,7 @@ export default function TestPage() {
           onForm={setForm}
         />
         <button id="ueqs-button">
-          <RateReviewIcon />
+          {/*<RateReviewIcon />*/}Nutzungserlebnis bewerten
         </button>
       </Portal>
       <h1>
