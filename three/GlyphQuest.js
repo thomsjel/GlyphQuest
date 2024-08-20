@@ -1,7 +1,6 @@
 import { MSDFTextGeometry, MSDFTextMaterial } from "three-msdf-text-utils";
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { Text } from "troika-three-text";
 import {
   COLOR,
   TEXTS,
@@ -417,7 +416,7 @@ export default class GlyphQuest {
           const billboardMaterial = new THREE.MeshBasicMaterial({
             color: 0x000000,
             transparent: true,
-            opacity: 0.8,
+            opacity: 0.55,
           });
           const billboardMesh = new THREE.Mesh(
             billboardGeometry,
