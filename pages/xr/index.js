@@ -27,7 +27,6 @@ import Stats from "three/addons/libs/stats.module.js";
 
 import { vlInit, generateLaunchCode, generateQRCode } from "@/utils/vl";
 import useIsApple from "@/hooks/useIsApple";
-import DomOverlayContent from "@/components/DomOverlayContent";
 import Portal from "@/components/Portal";
 import { useScreenshot } from "use-react-screenshot";
 
