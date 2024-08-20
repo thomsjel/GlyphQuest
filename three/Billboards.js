@@ -185,8 +185,8 @@ export default class Billboards {
     scene.add(shadowPlane);
 
     const stationBillboards = await this.createBillboards();
-    stationBillboards.name = "Station Billboards";
-    scene.add(stationBillboards);
+    //stationBillboards.name = "Station Billboards";
+    //scene.add(stationBillboards);
 
     // Erstellen und Hinzufügen der Stationen zur Szene
     const stationA = await this.createStationA();
