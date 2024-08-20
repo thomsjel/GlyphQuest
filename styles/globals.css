@@ -661,8 +661,8 @@ h1 > span:first-child {
   transform: translateX(-50%);
   color: white;
   padding: 1.5rem;
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
   border-radius: 6rem;
   -webkit-appearance: none;
   font-size: large;
