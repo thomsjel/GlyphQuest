@@ -9,7 +9,7 @@ import {
 } from "./constants/glyphQuest/index.js";
 import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
 import { FontLoader } from "three/addons/loaders/FontLoader.js";
-import { ARButton } from "three/examples/jsm/webxr/ARButton.js";
+import { ARButton } from "three/addons/webxr/ARButton.js";
 
 export default class GlyphQuest {
   constructor() {
